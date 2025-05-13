@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "TDoa6iOB378=",
+  "dgSpecHash": "iZbJqyyrSc4=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\CSharp\\CrewBackend\\backend.csproj",
+  "projectFilePath": "C:\\Projects\\CSharp\\CrewBackend\\crewbackend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\aungm\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
     "C:\\Users\\aungm\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",

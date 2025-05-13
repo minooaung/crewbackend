@@ -4759,9 +4759,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Projects\\CSharp\\CrewBackend\\backend.csproj",
-      "projectName": "backend",
-      "projectPath": "C:\\Projects\\CSharp\\CrewBackend\\backend.csproj",
+      "projectUniqueName": "C:\\Projects\\CSharp\\CrewBackend\\crewbackend.csproj",
+      "projectName": "crewbackend",
+      "projectPath": "C:\\Projects\\CSharp\\CrewBackend\\crewbackend.csproj",
       "packagesPath": "C:\\Users\\aungm\\.nuget\\packages\\",
       "outputPath": "C:\\Projects\\CSharp\\CrewBackend\\obj\\",
       "projectStyle": "PackageReference",
