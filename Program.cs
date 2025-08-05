@@ -4,14 +4,12 @@ using crewbackend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity; // For PasswordHasher<>
-using crewbackend.Models; // Assuming User class is in the Models namespace
+using crewbackend.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-
-// Add Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -35,16 +33,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
+// Register custom services
+builder.Services.AddScoped<IUserService, UserService>();
 // Register UserService for Dependency Injection
 // It means a fresh UserService instance is created per HTTP request (best practice for database access).
-builder.Services.AddScoped<IUserService, UserService>();
-
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
+// Register Seeder: make sure Seeder is registered in DI container
+builder.Services.AddScoped<Seeder>();
 
 // Register AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
-
+// Authentication & Authorization
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
     {
@@ -54,18 +55,46 @@ builder.Services.AddAuthentication("Cookies")
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Use Always in production (HTTPS)
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
+
+        // 👇 ADD THESE EVENT HANDLERS HERE
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync("{\"message\": \"You are not authorized to perform this action.\"}");
+        };
+
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync("{\"message\": \"Authentication required.\"}");
+        };
     });
 
 builder.Services.AddAuthorization();
 
-
+// This is the default configuration loading order:
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddUserSecrets<Program>(optional: true)
+    .AddEnvironmentVariables();
 
 var app = builder.Build();
 
-// Add this before app.UseRouting() or app.UseEndpoints()
-// app.UseMiddleware<ErrorHandlerMiddleware>();
+// *** Run Seeder BEFORE app starts serving requests ***
+// This ensures that the database is created and seeded with initial data before the application starts.
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var seeder = services.GetRequiredService<Seeder>();
+    await seeder.SeedAsync(); // Ensures DB and data are ready
+}
 
-// Development
+// Swagger in development
+// This is a tool that helps you visualize and test your API endpoints.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

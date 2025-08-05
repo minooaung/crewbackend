@@ -21,6 +21,9 @@ Thumbs.db
 
 ## ASP.NET Core secrets
 secrets.json
+**/secrets.json
+appsettings.Development.json
+**/appsettings.Development.json
 
 ## Environment variable files
 .env
