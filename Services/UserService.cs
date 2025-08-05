@@ -65,13 +65,20 @@ namespace crewbackend.Services
                 }                
             }
 
+            // Map UserCreateDTO to User entity
             var user = _mapper.Map<User>(userDto);
+
+            // Assign default RoleId (e.g., Employee = 2)
+            //user.RoleId = 2;
 
             // Hash the password using the password hasher
             user.Password = _passwordHasher.HashPassword(user, user.Password);
+
+            // Set CreatedAt and UpdatedAt timestamps
             user.CreatedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
 
+            // Add the user to the database
             _appDbContext.Users.Add(user);
             await _appDbContext.SaveChangesAsync();
 
@@ -129,27 +136,46 @@ namespace crewbackend.Services
             _appDbContext.Users.Remove(user);
             await _appDbContext.SaveChangesAsync();
             return true;
-        }        
+        }
 
-        public async Task<UserResponseDTO?> AuthenticateAsync(string email, string password)
+        // public async Task<UserResponseDTO?> AuthenticateAsync(string email, string password)
+        // {
+        //     if (_appDbContext.Users == null) return null;
+
+        //     var user = await _appDbContext.Users
+        //         .Include(u => u.Role) // 👈 Load the role
+        //         .FirstOrDefaultAsync(u => u.Email == email);
+
+        //     if (user == null) return null;
+
+        //     // Verify the password using the password hasher
+        //     var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+        //     if (result != PasswordVerificationResult.Success)
+        //     {
+        //         return null; // Invalid password
+        //     }
+
+        //     return _mapper.Map<UserResponseDTO>(user);
+        // }
+        
+        public async Task<User?> AuthenticateAsync(string email, string password)
         {
             if (_appDbContext.Users == null) return null;
 
             var user = await _appDbContext.Users
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null) return null;
 
-            // Verify the password using the password hasher
             var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
             if (result != PasswordVerificationResult.Success)
             {
-                return null; // Invalid password
+                return null;
             }
 
-            return _mapper.Map<UserResponseDTO>(user);
+            return user;
         }
-        
 
         // Get user by email only
         public async Task<UserResponseDTO?> GetUserByEmailAsync(string email)

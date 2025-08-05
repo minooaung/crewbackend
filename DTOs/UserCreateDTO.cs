@@ -16,10 +16,14 @@ namespace crewbackend.DTOs
         [StrongPassword]
         public string Password { get; set; } = string.Empty;
 
-        
+
         [Required]
         // Don't use the following as custom validation check is done at UserService.cs
         //[Compare("Password", ErrorMessage = "Passwords do not match.")] 
         public string Password_Confirmation { get; set; } = string.Empty;
+        
+        [Required]
+        public int RoleId { get; set; }
+
     }
 }

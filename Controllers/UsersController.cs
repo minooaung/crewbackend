@@ -1,6 +1,7 @@
 using crewbackend.DTOs;
 using crewbackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -132,7 +133,7 @@ namespace crewbackend.Controllers
 
         // GET: api/users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserResponseDTO>> GetUser(int id)
+        public async Task<ActionResult<UserResponseDTO>> GetUserById(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
 
@@ -142,25 +143,32 @@ namespace crewbackend.Controllers
         }
 
         // POST: api/users
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         //public async Task<ActionResult<UserResponseDTO>> CreateUser([FromBody] UserCreateDTO userDto)
         public async Task<IActionResult> CreateUser([FromBody] UserCreateDTO userDto)
         {
-            var errorResult = ControllerHelpers.HandleModelStateErrors(ModelState);
-            if (errorResult != null)
-            {
-                return errorResult;
-            }
+            // var errorResult = ControllerHelpers.HandleModelStateErrors(ModelState);
+            // if (errorResult != null)
+            // {
+            //     return errorResult;
+            // }
 
-            //var createdUser = await _userService.CreateUserAsync(userDto);
-            //return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
+            // //var createdUser = await _userService.CreateUserAsync(userDto);
+            // //return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
+
+            // var createdUser = await _userService.CreateUserAsync(userDto);
+            // return Ok(new { user = createdUser });
+            
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var createdUser = await _userService.CreateUserAsync(userDto);
-	        //return Ok(result);
-            return Ok(new { user = createdUser });
+            return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
         }
 
         // PUT: api/users/5
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDTO userDto)
         {
@@ -189,6 +197,7 @@ namespace crewbackend.Controllers
         }
 
         // DELETE: api/users/5
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
