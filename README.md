@@ -2,17 +2,17 @@
 
 An ASP.NET Core Web API backend for managing users, roles, and organisations — built with Entity Framework Core and SQL Server.
 
-## ✅ Features
+## Features
 
-- 🔐 Secure password handling using `IPasswordHasher`
-- 👥 User & Role management (Admin, Employee)
-- 🏢 Organisation support
-- 📦 Seeded initial data (including default Admin)
-- 🧼 Clean project structure and automation scripts for easy setup
+- Secure password handling using `IPasswordHasher`
+- User & Role management (Admin, Employee)
+- Organisation support
+- Seeded initial data (including default Admin)
+- Clean project structure and automation scripts for easy setup
 
 ---
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### 1. Requirements
 
@@ -23,7 +23,7 @@ An ASP.NET Core Web API backend for managing users, roles, and organisations —
 
 ---
 
-## 🖥️ Windows Setup (PowerShell)
+## Windows Setup (PowerShell)
 
 Open PowerShell as **Administrator**, navigate to the project directory, and run:
 Run the `setup.ps1` script
@@ -43,7 +43,7 @@ This script (setup.ps1) will:
 
 ---
 
-## 🖥️ MacOS/Linux Setup (Shell)
+## MacOS/Linux Setup (Shell)
 
 ```shell
 chmod +x setup.sh
@@ -71,11 +71,11 @@ If you prefer to set up the project manually instead of using an automated scrip
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Database=CrewApp;Trusted_Connection=True;TrustServerCertificate=True;"
+  "DefaultConnection": "PutYourDatabaseConnectionStrings"
 }
 ```
 
-- 💡 Adjust the server, database name, or authentication method as needed.
+- Adjust the server, database name, or authentication method as needed.
 
 ### Run the following setup commands
 
