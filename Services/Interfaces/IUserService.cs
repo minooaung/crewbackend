@@ -18,7 +18,8 @@ namespace crewbackend.Services.Interfaces
         Task<bool> UpdateUserAsync(int id, UserUpdateDTO userDto);
         Task<bool> DeleteUserAsync(int id);
 
-        Task<UserResponseDTO?> AuthenticateAsync(string email, string password);
+        //Task<UserResponseDTO?> AuthenticateAsync(string email, string password);
+        Task<User?> AuthenticateAsync(string email, string password);
         Task<UserResponseDTO?> GetUserByEmailAsync(string email);
 
         IQueryable<User> QueryUsers(); // Added QueryUsers method
