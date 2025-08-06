@@ -7,8 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using crewbackend.Helpers;
 
-// using Microsoft.Identity.Client;
-
 namespace crewbackend.Controllers
 {
     [ApiController]
@@ -24,13 +22,6 @@ namespace crewbackend.Controllers
         }
 
         // GET: api/users
-        // [HttpGet]
-        // public async Task<ActionResult<IEnumerable<UserResponseDTO>>> GetUsers()
-        // {
-        //     var users = await _userService.GetAllUsersAsync();        
-        //     return Ok(new { users = users });
-        // }
-
         [HttpGet]
         public async Task<ActionResult> GetUsers(
             [FromQuery] int page = 1, 
@@ -56,8 +47,6 @@ namespace crewbackend.Controllers
                                 .Select(user => UserResponseMapper.MapToUserResponseDTO(user))
                                 .ToList();
 
-            //return Ok(formattedUsers);
-
             // Pagination calculations
             var lastPage = (int)Math.Ceiling(total / (double)pageSize);
             var from = ((page - 1) * pageSize) + 1;
@@ -65,10 +54,9 @@ namespace crewbackend.Controllers
 
             // Prepare pagination links
             var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}";
-
+            
             var pageLinks = Enumerable.Range(1, lastPage)
                 .Select(p => new PaginationLink{
-                    //Url = p == page ? null : $"{baseUrl}?page={p}",
                     Url = $"{baseUrl}?page={p}",
                     Label = p.ToString(),
                     Active = p == page
@@ -77,57 +65,42 @@ namespace crewbackend.Controllers
             pageLinks.Insert(0, new PaginationLink
             {
                 Url = page > 1 ? $"{baseUrl}?page={page - 1}" : null,
-                Label = "<< Previous",
+                Label = "&laquo; Previous",
                 Active = false
             });
 
             pageLinks.Add(new PaginationLink
             {
                 Url = page < lastPage ? $"{baseUrl}?page={page + 1}" : null,
-                Label = "Next >>",
+                Label = "Next &raquo;",
                 Active = false
             });
 
-            // setPaginationLinks(response.data.meta.links);
-            // setCurrentPage(response.data.meta.current_page);
-            // setTotalUsers(response.data.meta.total);
-            // setFromUser(response.data.meta.from);
-            // setToUser(response.data.meta.to);
+            var links = new
+            {
+                first = $"{baseUrl}?page=1",
+                last = $"{baseUrl}?page={lastPage}",
+                prev = page > 1 ? $"{baseUrl}?page={page - 1}" : null,
+                next = page < lastPage ? $"{baseUrl}?page={page + 1}" : null
+            };
 
             var meta = new
             {
-                links = pageLinks,
                 current_page = page,
-                total,
-                from,
-                to,                
+                from = from,
+                last_page = lastPage,
+                links = pageLinks,
+                path = baseUrl,
+                per_page = pageSize,
+                to = to,
+                total = total
             };
-
-            // var meta = new
-            // {
-            //     current_page = page,
-            //     last_page = lastPage,
-            //     per_page = pageSize,
-            //     from,  
-            //     to,              
-            //     path = baseUrl,
-            //     total,
-            //     links = pageLinks
-            // };
-
-            // var links = new
-            // {
-            //     first = $"{baseUrl}?page=1",
-            //     last = $"{baseUrl}?page={lastPage}",
-            //     prev = page > 1 ? $"{baseUrl}?page={page - 1}" : null,
-            //     next = page < lastPage ? $"{baseUrl}?page={page + 1}" : null
-            // };
 
             return Ok(new
             {
-                users = formattedUsers,
-                meta,
-                // links
+                data = formattedUsers,
+                links,
+                meta
             });            
         }
 

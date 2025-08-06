@@ -23,7 +23,7 @@ namespace crewbackend.DTOs
         public string Password_Confirmation { get; set; } = string.Empty;
         
         [Required]
-        public int RoleId { get; set; }
+        public string Role { get; set; } = string.Empty;
 
     }
 }

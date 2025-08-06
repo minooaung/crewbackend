@@ -15,8 +15,8 @@ namespace crewbackend.Helpers
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
-                Created_at = user.CreatedAt?.ToString("dd/MM/yyyy"),
-                Updated_at = user.UpdatedAt?.ToString("dd/MM/yyyy")
+                Role = user.Role?.RoleName?.ToUpper() ?? string.Empty,
+                Created_at = user.CreatedAt?.ToString("dd/MM/yyyy") ?? string.Empty
             };
         }
     }

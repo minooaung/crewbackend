@@ -15,8 +15,6 @@ namespace crewbackend.Services
         private readonly AppDbContext _appDbContext;
         private readonly IMapper _mapper;
         private readonly IPasswordHasher<User> _passwordHasher;
-        //private readonly IPasswordValidator<User> _passwordValidator;
-
 
         public UserService(AppDbContext appDbContext, IMapper mapper, IPasswordHasher<User> passwordHasher) {
             _appDbContext = appDbContext;
@@ -65,11 +63,18 @@ namespace crewbackend.Services
                 }                
             }
 
+            // Get role ID from role name
+            var role = await _appDbContext.UserRoles
+                .FirstOrDefaultAsync(r => r.RoleName.ToUpper() == userDto.Role.ToUpper());
+
+            if (role == null)
+            {
+                throw new ValidationException($"Invalid role: {userDto.Role}", nameof(userDto.Role));
+            }
+
             // Map UserCreateDTO to User entity
             var user = _mapper.Map<User>(userDto);
-
-            // Assign default RoleId (e.g., Employee = 2)
-            //user.RoleId = 2;
+            user.RoleId = role.RoleId;
 
             // Hash the password using the password hasher
             user.Password = _passwordHasher.HashPassword(user, user.Password);
@@ -85,24 +90,6 @@ namespace crewbackend.Services
             //return _mapper.Map<UserResponseDTO>(user);
             return UserResponseMapper.MapToUserResponseDTO(user);
         }
-
-// public async Task<UserResponseDTO> CreateUserAsync(UserCreateDTO dto)
-// {
-//     var user = new User
-//     {
-//         Name = dto.Name,
-//         Email = dto.Email,
-//         //Password = dto.Password, // Set the required Password property
-//         Password = _passwordHasher.HashPassword(user, dto.Password),
-//         CreatedAt = DateTime.UtcNow,
-//         UpdatedAt = DateTime.UtcNow
-//     };
-
-//     _appDbContext.Users.Add(user);
-//     await _appDbContext.SaveChangesAsync();
-
-//     return UserResponseMapper.MapToUserResponseDTO(user);
-// }
 
         public async Task<bool> UpdateUserAsync(int id, UserUpdateDTO userDto)
         {
@@ -137,26 +124,6 @@ namespace crewbackend.Services
             await _appDbContext.SaveChangesAsync();
             return true;
         }
-
-        // public async Task<UserResponseDTO?> AuthenticateAsync(string email, string password)
-        // {
-        //     if (_appDbContext.Users == null) return null;
-
-        //     var user = await _appDbContext.Users
-        //         .Include(u => u.Role) // 👈 Load the role
-        //         .FirstOrDefaultAsync(u => u.Email == email);
-
-        //     if (user == null) return null;
-
-        //     // Verify the password using the password hasher
-        //     var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
-        //     if (result != PasswordVerificationResult.Success)
-        //     {
-        //         return null; // Invalid password
-        //     }
-
-        //     return _mapper.Map<UserResponseDTO>(user);
-        // }
         
         public async Task<User?> AuthenticateAsync(string email, string password)
         {
@@ -180,22 +147,15 @@ namespace crewbackend.Services
         // Get user by email only
         public async Task<UserResponseDTO?> GetUserByEmailAsync(string email)
         {
-            //if (_appDbContext.Users == null) return null;
-
             var user = await _appDbContext.Users
                 .FirstOrDefaultAsync(u => u.Email == email);
 
             return user == null ? null : _mapper.Map<UserResponseDTO>(user);
-        }
-
-        // public IQueryable<User> QueryUsers() // Implemented QueryUsers method
-        // {
-        //     return _context.Set<User>();
-        // }
+        }        
 
         public IQueryable<User> QueryUsers()
         {
-            return _appDbContext.Users.AsQueryable();
+            return _appDbContext.Users.Include(u => u.Role).AsQueryable();
         }
     }
 }
