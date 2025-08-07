@@ -5,45 +5,49 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using crewbackend.Helpers;
 using CrewBackend.Exceptions.Domain;
-using CrewBackend.Exceptions.Auth;
 
 namespace crewbackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UsersController : ControllerBase
+    public class OrganisationsController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly IOrganisationService _organisationService;
 
-        public UsersController(IUserService userService)
+        public OrganisationsController(IOrganisationService organisationService)
         {
-            _userService = userService;
+            _organisationService = organisationService;
         }
 
         [HttpGet]
-        public async Task<ActionResult> GetUsers(
-            [FromQuery] int page = 1, 
-            [FromQuery] int pageSize = 10, 
+        public async Task<ActionResult> GetOrganisations(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null)
         {
-            var query = _userService.QueryUsers();
+            var query = _organisationService.QueryOrganisations();
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(u => u.Name.Contains(search) || u.Email.Contains(search));
+                query = query.Where(o => o.OrgName.Contains(search));
             }
 
             var total = await query.CountAsync();
-            var users = await query
-                .OrderBy(u => u.Id)
+            var organisations = await query
+                .OrderBy(o => o.OrgId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();            
+                .ToListAsync();
 
-            // Map users to DTOs with localized dates
-            var formattedUsers = users
-                                .Select(user => UserResponseMapper.MapToUserResponseDTO(user))
-                                .ToList();
+            var formattedOrganisations = organisations
+                .Select(org => new OrganisationResponseDTO
+                {
+                    OrgId = org.OrgId,
+                    OrgName = org.OrgName,
+                    CreatedAt = org.CreatedAt.ToString("dd/MM/yyyy"),
+                    UsersCount = org.OrganisationUsers.Count
+                })
+                .ToList();
 
             // Pagination calculations
             var lastPage = (int)Math.Ceiling(total / (double)pageSize);
@@ -54,7 +58,8 @@ namespace crewbackend.Controllers
             var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}";
             
             var pageLinks = Enumerable.Range(1, lastPage)
-                .Select(p => new PaginationLink{
+                .Select(p => new PaginationLink
+                {
                     Url = $"{baseUrl}?page={p}",
                     Label = p.ToString(),
                     Active = p == page
@@ -96,28 +101,28 @@ namespace crewbackend.Controllers
 
             return Ok(new
             {
-                data = formattedUsers,
+                data = formattedOrganisations,
                 links,
                 meta
-            });            
+            });
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserResponseDTO>> GetUserById(int id)
+        public async Task<ActionResult<OrganisationResponseDTO>> GetOrganisationById(int id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
+            var organisation = await _organisationService.GetOrganisationByIdAsync(id);
 
-            if (user == null)
+            if (organisation == null)
             {
-                throw new EntityNotFoundException($"User with ID {id} not found.");
+                throw new EntityNotFoundException($"Organisation with ID {id} not found.");
             }
 
-            return Ok(user);
+            return Ok(organisation);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] UserCreateDTO userDto)
+        public async Task<IActionResult> CreateOrganisation([FromBody] OrganisationCreateDTO orgDto)
         {
             if (!ModelState.IsValid)
             {
@@ -130,13 +135,13 @@ namespace crewbackend.Controllers
                 throw new ValidationException(errors);
             }
 
-            var createdUser = await _userService.CreateUserAsync(userDto);
-            return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
+            var createdOrg = await _organisationService.CreateOrganisationAsync(orgDto);
+            return CreatedAtAction(nameof(GetOrganisationById), new { id = createdOrg.OrgId }, createdOrg);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDTO userDto)
+        public async Task<IActionResult> UpdateOrganisation(int id, [FromBody] OrganisationUpdateDTO orgDto)
         {
             if (!ModelState.IsValid)
             {
@@ -149,15 +154,15 @@ namespace crewbackend.Controllers
                 throw new ValidationException(errors);
             }
 
-            await _userService.UpdateUserAsync(id, userDto);
+            await _organisationService.UpdateOrganisationAsync(id, orgDto);
             return NoContent();
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteOrganisation(int id)
         {
-            await _userService.DeleteUserAsync(id);
+            await _organisationService.DeleteOrganisationAsync(id);
             return NoContent();
         }
     }

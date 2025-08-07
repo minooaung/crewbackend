@@ -6,7 +6,7 @@ using crewbackend.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using crewbackend.Helpers;
-using crewbackend.Exceptions;
+using CrewBackend.Exceptions.Domain;
 
 namespace crewbackend.Services
 {
@@ -48,18 +48,14 @@ namespace crewbackend.Services
 
             if (existingUser != null)
             {
-                //throw new ArgumentException("A user with this email already exists.");
-                throw new ValidationException("A user with this email already exists.", nameof(userDto.Email));
+                throw new ValidationException("email", "The email has already been taken.");
             }
 
             if (!string.IsNullOrWhiteSpace(userDto.Password))
             {
                 if (userDto.Password != userDto.Password_Confirmation)
-                {
-                    // throw new ArgumentException("Password and Password confirmation do not match.");
-                    //throw new ValidationException("Password and confirmation do not match", "password_confirmation");
-                    
-                    throw new ValidationException("Password and Password confirmation do not match.", nameof(userDto.Password_Confirmation));
+                {                    
+                    throw new ValidationException("password_confirmation", "The password confirmation does not match.");
                 }                
             }
 
@@ -69,7 +65,7 @@ namespace crewbackend.Services
 
             if (role == null)
             {
-                throw new ValidationException($"Invalid role: {userDto.Role}", nameof(userDto.Role));
+                throw new ValidationException("role", $"The selected role is invalid.");
             }
 
             // Map UserCreateDTO to User entity
@@ -87,21 +83,23 @@ namespace crewbackend.Services
             _appDbContext.Users.Add(user);
             await _appDbContext.SaveChangesAsync();
 
-            //return _mapper.Map<UserResponseDTO>(user);
             return UserResponseMapper.MapToUserResponseDTO(user);
         }
 
         public async Task<bool> UpdateUserAsync(int id, UserUpdateDTO userDto)
         {
             var existingUser = await _appDbContext.Users.FindAsync(id);
-            if (existingUser == null) return false;
+            if (existingUser == null) 
+            {
+                throw new EntityNotFoundException($"User with ID {id} not found.");
+            }
             
             // Handle password update first
             if (!string.IsNullOrWhiteSpace(userDto.Password))
             {
                 if (userDto.Password != userDto.Password_Confirmation)
                 {
-                    throw new ValidationException("Password and Password confirmation do not match.", nameof(userDto.Password_Confirmation));
+                    throw new ValidationException("password_confirmation", "The password confirmation does not match.");
                 }
 
                 existingUser.Password = _passwordHasher.HashPassword(existingUser, userDto.Password);
@@ -118,7 +116,10 @@ namespace crewbackend.Services
         public async Task<bool> DeleteUserAsync(int id)
         {
             var user = await _appDbContext.Users.FindAsync(id);
-            if (user == null) return false;
+            if (user == null) 
+            {
+                throw new EntityNotFoundException($"User with ID {id} not found.");
+            }
 
             _appDbContext.Users.Remove(user);
             await _appDbContext.SaveChangesAsync();

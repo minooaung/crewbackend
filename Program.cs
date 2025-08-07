@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity; // For PasswordHasher<>
 using crewbackend.Models;
+using CrewBackend.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,8 +36,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register custom services
 builder.Services.AddScoped<IUserService, UserService>();
-// Register UserService for Dependency Injection
-// It means a fresh UserService instance is created per HTTP request (best practice for database access).
+builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 // Register Seeder: make sure Seeder is registered in DI container
