@@ -12,7 +12,7 @@ using crewbackend.Data;
 namespace crewbackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250606131912_InitialCreate")]
+    [Migration("20250807090136_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -51,15 +51,34 @@ namespace crewbackend.Migrations
 
             modelBuilder.Entity("crewbackend.Models.OrganisationUser", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssignedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrganisationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int>("OrgId")
-                        .HasColumnType("int");
+                    b.HasKey("Id");
 
-                    b.HasKey("UserId", "OrgId");
+                    b.HasIndex("AssignedBy");
 
-                    b.HasIndex("OrgId");
+                    b.HasIndex("OrganisationId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("OrganisationUsers", (string)null);
                 });
@@ -80,9 +99,6 @@ namespace crewbackend.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<DateTime?>("EmailVerifiedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -91,10 +107,6 @@ namespace crewbackend.Migrations
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RememberToken")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
@@ -138,17 +150,24 @@ namespace crewbackend.Migrations
 
             modelBuilder.Entity("crewbackend.Models.OrganisationUser", b =>
                 {
+                    b.HasOne("crewbackend.Models.User", "AssignedByUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("crewbackend.Models.Organisation", "Organisation")
                         .WithMany("OrganisationUsers")
-                        .HasForeignKey("OrgId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("OrganisationId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("crewbackend.Models.User", "User")
                         .WithMany("OrganisationUsers")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("AssignedByUser");
 
                     b.Navigation("Organisation");
 

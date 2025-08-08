@@ -14,6 +14,9 @@ namespace crewbackend.DTOs
         public string CreatedAt { get; set; } = string.Empty;
 
         [JsonPropertyName("users_count")]
-        public int UsersCount { get; set; }
+        public int? UsersCount { get; set; }
+
+        [JsonPropertyName("users")]
+        public List<UserResponseDTO> Users { get; set; } = new List<UserResponseDTO>();
     }
 }

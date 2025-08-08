@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using CrewBackend.Exceptions.Domain;
 
 namespace crewbackend.Helpers
 {
@@ -22,21 +23,18 @@ namespace crewbackend.Helpers
         //     return new BadRequestObjectResult(new { errors });
         // }
 
-        public static IActionResult HandleModelStateErrors(ModelStateDictionary modelState)
+        public static void HandleModelStateErrors(ModelStateDictionary modelState)
         {
             if (!modelState.IsValid)
             {
                 var errors = modelState
-                    .Where(x => x.Value != null && x.Value.Errors.Count > 0)
+                    .Where(x => x.Value?.Errors.Count > 0)
                     .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value?.Errors?.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                        kvp => kvp.Key.ToLower(),
+                        kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
                     );
-
-                return new BadRequestObjectResult(new { errors });
+                throw new ValidationException(errors);
             }
-
-            return null!;
         }
     }
 }

@@ -160,5 +160,24 @@ namespace crewbackend.Controllers
             await _userService.DeleteUserAsync(id);
             return NoContent();
         }
+
+        [HttpGet("selected")]
+        public async Task<ActionResult> GetSelectedUsers([FromQuery] string ids)
+        {
+            if (string.IsNullOrEmpty(ids))
+            {
+                return Ok(new { data = new List<UserResponseDTO>() });
+            }
+
+            var userIds = ids.Split(',').Select(int.Parse).ToList();
+            var query = _userService.QueryUsers().Where(u => userIds.Contains(u.Id));
+            
+            var users = await query.ToListAsync();
+            var formattedUsers = users
+                .Select(user => UserResponseMapper.MapToUserResponseDTO(user))
+                .ToList();
+
+            return Ok(new { data = formattedUsers });
+        }
     }
 }

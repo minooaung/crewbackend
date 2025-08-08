@@ -22,8 +22,7 @@ namespace crewbackend.DTOs
         //[Compare("Password", ErrorMessage = "Passwords do not match.")] 
         public string Password_Confirmation { get; set; } = string.Empty;
         
-        [Required]
-        public string Role { get; set; } = string.Empty;
+        public string? Role { get; set; }
 
     }
 }

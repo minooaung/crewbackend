@@ -30,11 +30,7 @@ namespace crewbackend.Controllers
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] UserCreateDTO userDto)
         {
-            var errorResult = ControllerHelpers.HandleModelStateErrors(ModelState);
-            if (errorResult != null)
-            {
-                return errorResult;
-            }
+            ControllerHelpers.HandleModelStateErrors(ModelState);
 
             var existingUser = await _userService.GetUserByEmailAsync(userDto.Email);
             if (existingUser != null)
@@ -63,11 +59,7 @@ namespace crewbackend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginDTO loginDto)
         {
-            var errorResult = ControllerHelpers.HandleModelStateErrors(ModelState);
-            if (errorResult != null)
-            {
-                return errorResult;
-            }
+            ControllerHelpers.HandleModelStateErrors(ModelState);
 
             // Log incoming headers and cookies (for debugging)
             foreach (var header in Request.Headers)

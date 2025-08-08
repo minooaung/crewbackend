@@ -77,19 +77,11 @@ namespace crewbackend.Data
                 entity.Property(e => e.Password)
                     .IsRequired();
 
-                entity.Property(e => e.RememberToken)
-                    .HasMaxLength(100)
-                    .IsRequired(false);
-
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("datetime2")
                     .IsRequired(false);
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("datetime2")
-                    .IsRequired(false);
-
-                entity.Property(e => e.EmailVerifiedAt)
                     .HasColumnType("datetime2")
                     .IsRequired(false);
 
@@ -104,15 +96,31 @@ namespace crewbackend.Data
             {
                 entity.ToTable("OrganisationUsers");
 
-                entity.HasKey(e => new { e.UserId, e.OrgId });
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime2")
+                    .IsRequired(false);
+
+                entity.Property(e => e.UpdatedAt)
+                    .HasColumnType("datetime2")
+                    .IsRequired(false);
 
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.OrganisationUsers)
-                    .HasForeignKey(e => e.UserId);
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Organisation)
                     .WithMany(o => o.OrganisationUsers)
-                    .HasForeignKey(e => e.OrgId);
+                    .HasForeignKey(e => e.OrganisationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.AssignedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.AssignedBy)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
             });
         }
     }    

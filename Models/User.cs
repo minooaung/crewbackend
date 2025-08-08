@@ -12,8 +12,6 @@ namespace crewbackend.Models
         public required string Name { get; set; }
         public required string Email { get; set; }
         public required string Password { get; set; }
-        public DateTime? EmailVerifiedAt { get; set; }
-        public string? RememberToken { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

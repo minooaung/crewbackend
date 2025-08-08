@@ -59,13 +59,14 @@ namespace crewbackend.Services
                 }                
             }
 
-            // Get role ID from role name
-            var role = await _appDbContext.UserRoles
-                .FirstOrDefaultAsync(r => r.RoleName.ToUpper() == userDto.Role.ToUpper());
+            // Get role - if no role specified, default to Employee
+            var role = string.IsNullOrEmpty(userDto.Role)
+                ? await _appDbContext.UserRoles.FirstOrDefaultAsync(r => r.RoleName.ToUpper() == "EMPLOYEE")
+                : await _appDbContext.UserRoles.FirstOrDefaultAsync(r => r.RoleName.ToUpper() == userDto.Role.ToUpper());
 
             if (role == null)
             {
-                throw new ValidationException("role", $"The selected role is invalid.");
+                throw new ValidationException("role", $"Unable to assign role. Please contact administrator.");
             }
 
             // Map UserCreateDTO to User entity

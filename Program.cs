@@ -35,6 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // Register custom services
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();

@@ -50,8 +50,6 @@ namespace crewbackend.Migrations
                     Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EmailVerifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RememberToken = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     RoleId = table.Column<int>(type: "int", nullable: false)
@@ -71,30 +69,51 @@ namespace crewbackend.Migrations
                 name: "OrganisationUsers",
                 columns: table => new
                 {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    OrgId = table.Column<int>(type: "int", nullable: false)
+                    OrganisationId = table.Column<int>(type: "int", nullable: false),
+                    AssignedBy = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrganisationUsers", x => new { x.UserId, x.OrgId });
+                    table.PrimaryKey("PK_OrganisationUsers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OrganisationUsers_Organisations_OrgId",
-                        column: x => x.OrgId,
+                        name: "FK_OrganisationUsers_Organisations_OrganisationId",
+                        column: x => x.OrganisationId,
                         principalTable: "Organisations",
                         principalColumn: "OrgId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_OrganisationUsers_Users_AssignedBy",
+                        column: x => x.AssignedBy,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_OrganisationUsers_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrganisationUsers_OrgId",
+                name: "IX_OrganisationUsers_AssignedBy",
                 table: "OrganisationUsers",
-                column: "OrgId");
+                column: "AssignedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganisationUsers_OrganisationId",
+                table: "OrganisationUsers",
+                column: "OrganisationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganisationUsers_UserId",
+                table: "OrganisationUsers",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
