@@ -15,6 +15,11 @@ namespace crewbackend.Models
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
+        // Soft Delete Properties
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public string? DeletedBy { get; set; }
+
         // Relationships
         public int RoleId { get; set; } // Foreign key for UserRole
         public UserRole Role { get; set; } = null!; // Navigation property for UserRole

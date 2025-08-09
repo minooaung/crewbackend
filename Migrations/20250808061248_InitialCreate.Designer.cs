@@ -12,7 +12,7 @@ using crewbackend.Data;
 namespace crewbackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250807090136_InitialCreate")]
+    [Migration("20250808061248_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -94,10 +94,19 @@ namespace crewbackend.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
