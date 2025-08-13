@@ -8,6 +8,7 @@ using CrewBackend.Exceptions.Domain;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using CrewBackend.Exceptions.Auth;
+using crewbackend.Helpers;
 
 namespace crewbackend.Services
 {
@@ -43,7 +44,7 @@ namespace crewbackend.Services
                 .Include(o => o.OrganisationUsers)
                 .ToListAsync();
 
-            return organisations.Select(MapToResponseDTO).ToList();
+            return organisations.Select(OrganisationResponseMapper.MapToOrganisationResponseDTO).ToList();
         }
 
         public async Task<OrganisationResponseDTO?> GetOrganisationByIdAsync(int id)
@@ -56,26 +57,42 @@ namespace crewbackend.Services
 
             if (organisation == null) return null;
 
-            return MapToResponseDTO(organisation);
+            return OrganisationResponseMapper.MapToOrganisationResponseDTO(organisation);
         }
 
         public async Task<OrganisationResponseDTO> CreateOrganisationAsync(OrganisationCreateDTO orgDto)
         {
-            // Check if organisation with same name exists
+            // Check if the name exists among non-deleted organizations
             var existingOrg = await _appDbContext.Organisations
-                .FirstOrDefaultAsync(o => o.OrgName.ToLower() == orgDto.OrgName.ToLower());
+                .FirstOrDefaultAsync(o => o.OrgName.ToLower() == orgDto.OrgName.ToLower() && !o.IsDeleted);
 
             if (existingOrg != null)
             {
                 throw new ValidationException("org_name", "The organisation name has already been taken.");
             }
 
-            var organisation = new Organisation
+            // Check if there's a soft-deleted organization with this name
+            var deletedOrg = await _appDbContext.Organisations
+                .Include(o => o.OrganisationUsers) // Includes OrganisationUsers to handle associated records
+                .FirstOrDefaultAsync(o => o.OrgName.ToLower() == orgDto.OrgName.ToLower() && o.IsDeleted);
+
+            if (deletedOrg != null)
             {
-                OrgName = orgDto.OrgName,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                // If found, hard delete the old organization and its associations from OrganisationUsers
+                // This is to prevent the new organization from being associated with the soft-deleted organization's users
+                if (deletedOrg.OrganisationUsers != null && deletedOrg.OrganisationUsers.Any())
+                {
+                    _appDbContext.OrganisationUsers.RemoveRange(deletedOrg.OrganisationUsers);
+                }
+                _appDbContext.Organisations.Remove(deletedOrg);
+                await _appDbContext.SaveChangesAsync();
+            }
+
+            // Mapping logic stays in OrganisationProfile.cs
+            // AutoMapper maps OrganisationCreateDTO to Organisation entity
+            var organisation = _mapper.Map<Organisation>(orgDto);
+            organisation.CreatedAt = DateTime.UtcNow;
+            organisation.UpdatedAt = DateTime.UtcNow;
 
             // Add the organisation first to get its ID
             _appDbContext.Organisations.Add(organisation);
@@ -110,10 +127,10 @@ namespace crewbackend.Services
                         .ThenInclude(u => u.Role)
                 .FirstAsync(o => o.OrgId == organisation.OrgId);
 
-            return MapToResponseDTO(updatedOrganisation);
+            return OrganisationResponseMapper.MapToOrganisationResponseDTO(updatedOrganisation);
         }
 
-        public async Task<bool> UpdateOrganisationAsync(int id, OrganisationUpdateDTO orgDto)
+        public async Task<OrganisationResponseDTO> UpdateOrganisationAsync(int id, OrganisationUpdateDTO orgDto)
         {
             var organisation = await _appDbContext.Organisations
                 .Include(o => o.OrganisationUsers)
@@ -133,24 +150,47 @@ namespace crewbackend.Services
                 throw new ValidationException("name", "The organisation name has already been taken.");
             }
 
-            // Update basic info
-            organisation.OrgName = orgDto.OrgName;
+            // Mapping logic stays in OrganisationProfile.cs
+            // AutoMapper maps OrganisationUpdateDTO to Organisation entity
+            _mapper.Map(orgDto, organisation);            
+
+            // Set timestamp after mapping
             organisation.UpdatedAt = DateTime.UtcNow;
 
             // Update user assignments
-            // Remove users that are not in the new list
+            // Soft delete users that are not in the new list
+            var currentUserId = GetCurrentUserId();
             var usersToRemove = organisation.OrganisationUsers
-                .Where(ou => !orgDto.UserIds.Contains(ou.UserId))
+                .Where(ou => !orgDto.UserIds.Contains(ou.UserId) && !ou.IsDeleted)
                 .ToList();
 
             foreach (var userToRemove in usersToRemove)
             {
-                _appDbContext.Remove(userToRemove);
+                userToRemove.IsDeleted = true;
+                userToRemove.DeletedAt = DateTime.UtcNow;
+                userToRemove.DeletedByUserId = currentUserId;
             }
 
-            // Add new users
-            var existingUserIds = organisation.OrganisationUsers.Select(ou => ou.UserId).ToList();
-            var newUserIds = orgDto.UserIds.Except(existingUserIds);
+            // Add new users or reactivate soft-deleted ones
+            var activeUserIds = organisation.OrganisationUsers
+                .Where(ou => !ou.IsDeleted)
+                .Select(ou => ou.UserId)
+                .ToList();
+            var newUserIds = orgDto.UserIds.Except(activeUserIds);
+
+            // Reactivate any soft-deleted associations
+            var softDeletedAssociations = organisation.OrganisationUsers
+                .Where(ou => ou.IsDeleted && orgDto.UserIds.Contains(ou.UserId))
+                .ToList();
+
+            foreach (var association in softDeletedAssociations)
+            {
+                association.IsDeleted = false;
+                association.DeletedAt = null;
+                association.DeletedByUserId = null;
+                association.UpdatedAt = DateTime.UtcNow;
+                newUserIds = newUserIds.Where(id => id != association.UserId);
+            }
 
             foreach (var userId in newUserIds)
             {
@@ -160,69 +200,67 @@ namespace crewbackend.Services
                     throw new ValidationException("user_ids", $"User with ID {userId} not found.");
                 }
 
-                var currentUserId = GetCurrentUserId();
                 organisation.OrganisationUsers.Add(new OrganisationUser
                 {
                     UserId = userId,
                     OrganisationId = id,
-                    AssignedBy = currentUserId,
+                    AssignedBy = currentUserId, // Using the currentUserId from outer scope
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 });
             }
 
             await _appDbContext.SaveChangesAsync();
-            return true;
+
+            // Reload the organisation with users to get the complete data
+            var updatedOrganisation = await _appDbContext.Organisations
+                .Include(o => o.OrganisationUsers)
+                    .ThenInclude(ou => ou.User)
+                        .ThenInclude(u => u.Role)
+                .FirstAsync(o => o.OrgId == id);
+
+            return OrganisationResponseMapper.MapToOrganisationResponseDTO(updatedOrganisation);
         }
 
         public async Task<bool> DeleteOrganisationAsync(int id)
         {
             var organisation = await _appDbContext.Organisations
                 .Include(o => o.OrganisationUsers)
-                .FirstOrDefaultAsync(o => o.OrgId == id);
+                .FirstOrDefaultAsync(o => o.OrgId == id && !o.IsDeleted);
 
             if (organisation == null)
             {
                 throw new EntityNotFoundException($"Organisation with ID {id} not found.");
             }
 
-            if (organisation.OrganisationUsers.Any())
+            var currentUserId = GetCurrentUserId();
+            var currentTime = DateTime.UtcNow;
+
+            // Soft delete the organisation
+            organisation.IsDeleted = true;
+            organisation.DeletedAt = currentTime;
+            organisation.DeletedByUserId = currentUserId;
+
+            // Soft delete all associated OrganisationUser records
+            foreach (var orgUser in organisation.OrganisationUsers.Where(ou => !ou.IsDeleted))
             {
-                throw new ValidationException("general", "Cannot delete organisation that has users. Please remove all users first.");
+                orgUser.IsDeleted = true;
+                orgUser.DeletedAt = currentTime;
+                orgUser.DeletedByUserId = currentUserId;
             }
 
-            _appDbContext.Organisations.Remove(organisation);
             await _appDbContext.SaveChangesAsync();
             return true;
         }
 
         public IQueryable<Organisation> QueryOrganisations()
         {
-            return _appDbContext.Organisations.Include(o => o.OrganisationUsers);
+            return _appDbContext.Organisations
+                .Where(o => !o.IsDeleted)
+                .Include(o => o.OrganisationUsers)
+                    .ThenInclude(ou => ou.User);
         }
 
-        private OrganisationResponseDTO MapToResponseDTO(Organisation org)
-        {
-            var users = org.OrganisationUsers
-                .Select(ou => ou.User)
-                .Select(user => new UserResponseDTO
-                {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Email = user.Email,
-                    Role = user.Role.RoleName.ToUpper(),
-                    Created_at = user.CreatedAt?.ToString("dd/MM/yyyy") ?? string.Empty
-                })
-                .ToList();
 
-            return new OrganisationResponseDTO
-            {
-                OrgId = org.OrgId,
-                OrgName = org.OrgName,
-                CreatedAt = org.CreatedAt.ToString("dd/MM/yyyy"),
-                UsersCount = org.OrganisationUsers.Count,
-                Users = users
-            };
-        }
     }
 }

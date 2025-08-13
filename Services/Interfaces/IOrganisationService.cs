@@ -8,7 +8,7 @@ namespace crewbackend.Services.Interfaces
         Task<List<OrganisationResponseDTO>> GetAllOrganisationsAsync();
         Task<OrganisationResponseDTO?> GetOrganisationByIdAsync(int id);
         Task<OrganisationResponseDTO> CreateOrganisationAsync(OrganisationCreateDTO orgDto);
-        Task<bool> UpdateOrganisationAsync(int id, OrganisationUpdateDTO orgDto);
+        Task<OrganisationResponseDTO> UpdateOrganisationAsync(int id, OrganisationUpdateDTO orgDto);
         Task<bool> DeleteOrganisationAsync(int id);
         IQueryable<Organisation> QueryOrganisations();
     }

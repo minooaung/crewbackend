@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using crewbackend.Helpers;
 using CrewBackend.Exceptions.Domain;
 using CrewBackend.Exceptions.Auth;
+using System.Security.Claims;
 
 namespace crewbackend.Controllers
 {
@@ -149,15 +150,21 @@ namespace crewbackend.Controllers
                 throw new ValidationException(errors);
             }
 
-            await _userService.UpdateUserAsync(id, userDto);
-            return NoContent();
+            var updatedUser = await _userService.UpdateUserAsync(id, userDto);
+            return Ok(updatedUser);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            await _userService.DeleteUserAsync(id);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                throw new AuthorizationException("User ID not found in claims or invalid");
+            }
+            
+            await _userService.DeleteUserAsync(id, userId);
             return NoContent();
         }
 

@@ -37,6 +37,8 @@ namespace crewbackend.Controllers
                 .OrderBy(o => o.OrgId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Include(o => o.OrganisationUsers)
+                    .ThenInclude(ou => ou.User)
                 .ToListAsync();
 
             var formattedOrganisations = organisations
@@ -45,7 +47,7 @@ namespace crewbackend.Controllers
                     OrgId = org.OrgId,
                     OrgName = org.OrgName,
                     CreatedAt = org.CreatedAt.ToString("dd/MM/yyyy"),
-                    UsersCount = org.OrganisationUsers.Count
+                    UsersCount = org.OrganisationUsers.Count(ou => !ou.IsDeleted && !ou.User.IsDeleted)
                 })
                 .ToList();
 
@@ -154,8 +156,8 @@ namespace crewbackend.Controllers
                 throw new ValidationException(errors);
             }
 
-            await _organisationService.UpdateOrganisationAsync(id, orgDto);
-            return NoContent();
+            var updatedOrg = await _organisationService.UpdateOrganisationAsync(id, orgDto);
+            return Ok(updatedOrg);
         }
 
         [Authorize(Roles = "Admin")]

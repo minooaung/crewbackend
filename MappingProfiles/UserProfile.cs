@@ -16,6 +16,7 @@ namespace crewbackend.MappingProfiles
                 .ForMember(dest => dest.Role, opt => opt.Ignore())
                 .ForMember(dest => dest.RoleId, opt => opt.Ignore());
 
+            // Shows clearly what properties are ignored or specially mapped
             CreateMap<UserUpdateDTO, User>()
             .ForMember(dest => dest.Password, opt => opt.Ignore()) // Prevent null overwrite
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore()); // Preserve original CreatedAt value

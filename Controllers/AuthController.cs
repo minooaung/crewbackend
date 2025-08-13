@@ -93,7 +93,7 @@ namespace crewbackend.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-            var userDto = _mapper.Map<UserResponseDTO>(user);
+            var userDto = UserResponseMapper.MapToUserResponseDTO(user);
             return Ok(new { user = userDto });
         }
 

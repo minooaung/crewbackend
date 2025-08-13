@@ -12,7 +12,7 @@ using crewbackend.Data;
 namespace crewbackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250808061248_InitialCreate")]
+    [Migration("20250813120739_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -36,6 +36,17 @@ namespace crewbackend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("OrgName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -45,6 +56,10 @@ namespace crewbackend.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("OrgId");
+
+                    b.HasIndex("DeletedByUserId");
+
+                    b.HasIndex("IsDeleted");
 
                     b.ToTable("Organisations", (string)null);
                 });
@@ -63,6 +78,17 @@ namespace crewbackend.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<int>("OrganisationId")
                         .HasColumnType("int");
 
@@ -75,6 +101,10 @@ namespace crewbackend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedBy");
+
+                    b.HasIndex("DeletedByUserId");
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("OrganisationId");
 
@@ -97,8 +127,8 @@ namespace crewbackend.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("DeletedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -106,7 +136,9 @@ namespace crewbackend.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -125,8 +157,13 @@ namespace crewbackend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeletedByUserId");
+
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("RoleId");
 
@@ -157,11 +194,26 @@ namespace crewbackend.Migrations
                     b.ToTable("UserRoles", (string)null);
                 });
 
+            modelBuilder.Entity("crewbackend.Models.Organisation", b =>
+                {
+                    b.HasOne("crewbackend.Models.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DeletedByUser");
+                });
+
             modelBuilder.Entity("crewbackend.Models.OrganisationUser", b =>
                 {
                     b.HasOne("crewbackend.Models.User", "AssignedByUser")
                         .WithMany()
                         .HasForeignKey("AssignedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("crewbackend.Models.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("crewbackend.Models.Organisation", "Organisation")
@@ -178,6 +230,8 @@ namespace crewbackend.Migrations
 
                     b.Navigation("AssignedByUser");
 
+                    b.Navigation("DeletedByUser");
+
                     b.Navigation("Organisation");
 
                     b.Navigation("User");
@@ -185,11 +239,18 @@ namespace crewbackend.Migrations
 
             modelBuilder.Entity("crewbackend.Models.User", b =>
                 {
+                    b.HasOne("crewbackend.Models.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("crewbackend.Models.UserRole", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("DeletedByUser");
 
                     b.Navigation("Role");
                 });

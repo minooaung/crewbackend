@@ -12,21 +12,6 @@ namespace crewbackend.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Organisations",
-                columns: table => new
-                {
-                    OrgId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrgName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Organisations", x => x.OrgId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "UserRoles",
                 columns: table => new
                 {
@@ -52,9 +37,9 @@ namespace crewbackend.Migrations
                     Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DeletedByUserId = table.Column<int>(type: "int", nullable: true),
                     RoleId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -65,6 +50,36 @@ namespace crewbackend.Migrations
                         column: x => x.RoleId,
                         principalTable: "UserRoles",
                         principalColumn: "RoleId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Users_Users_DeletedByUserId",
+                        column: x => x.DeletedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Organisations",
+                columns: table => new
+                {
+                    OrgId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    OrgName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedByUserId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Organisations", x => x.OrgId);
+                    table.ForeignKey(
+                        name: "FK_Organisations_Users_DeletedByUserId",
+                        column: x => x.DeletedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -78,7 +93,10 @@ namespace crewbackend.Migrations
                     OrganisationId = table.Column<int>(type: "int", nullable: false),
                     AssignedBy = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedByUserId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -96,6 +114,12 @@ namespace crewbackend.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_OrganisationUsers_Users_DeletedByUserId",
+                        column: x => x.DeletedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_OrganisationUsers_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
@@ -104,9 +128,29 @@ namespace crewbackend.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Organisations_DeletedByUserId",
+                table: "Organisations",
+                column: "DeletedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Organisations_IsDeleted",
+                table: "Organisations",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OrganisationUsers_AssignedBy",
                 table: "OrganisationUsers",
                 column: "AssignedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganisationUsers_DeletedByUserId",
+                table: "OrganisationUsers",
+                column: "DeletedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganisationUsers_IsDeleted",
+                table: "OrganisationUsers",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrganisationUsers_OrganisationId",
@@ -119,10 +163,21 @@ namespace crewbackend.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Users_DeletedByUserId",
+                table: "Users",
+                column: "DeletedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
                 table: "Users",
                 column: "Email",
-                unique: true);
+                unique: true,
+                filter: "[IsDeleted] = 0");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_IsDeleted",
+                table: "Users",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",

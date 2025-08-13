@@ -28,27 +28,48 @@ namespace crewbackend.Services
 
             var users = await _appDbContext.Users.ToListAsync();
             
-            return _mapper.Map<List<UserResponseDTO>>(users);
+            return users.Select(UserResponseMapper.MapToUserResponseDTO).ToList();
         }
+        
         public async Task<UserResponseDTO?> GetUserByIdAsync(int id)
         {
             if (_appDbContext.Users == null) return null;
 
-            var user = await _appDbContext.Users.FindAsync(id);
+            var user = await _appDbContext.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return null;
 
-            return _mapper.Map<UserResponseDTO>(user);            
+            return UserResponseMapper.MapToUserResponseDTO(user);
         }
 
         public async Task<UserResponseDTO> CreateUserAsync(UserCreateDTO userDto)
         {            
-            // Check if the email already exists
+            // Check if the email exists among non-deleted users
             var existingUser = await _appDbContext.Users
-                                    .FirstOrDefaultAsync(u => u.Email == userDto.Email);
+                                    .FirstOrDefaultAsync(u => u.Email == userDto.Email && !u.IsDeleted);
 
             if (existingUser != null)
             {
                 throw new ValidationException("email", "The email has already been taken.");
+            }
+
+            // Check if there's a soft-deleted user with this email
+            var deletedUser = await _appDbContext.Users
+                                    .Include(u => u.OrganisationUsers)
+                                    .FirstOrDefaultAsync(u => u.Email == userDto.Email && u.IsDeleted);
+
+            if (deletedUser != null)
+            {
+                // First, hard delete all associated OrganisationUsers records
+                if (deletedUser.OrganisationUsers != null && deletedUser.OrganisationUsers.Any())
+                {
+                    _appDbContext.OrganisationUsers.RemoveRange(deletedUser.OrganisationUsers);
+                }
+
+                // Then hard delete the user record to allow reuse of the email
+                _appDbContext.Users.Remove(deletedUser);
+                await _appDbContext.SaveChangesAsync();
             }
 
             if (!string.IsNullOrWhiteSpace(userDto.Password))
@@ -69,7 +90,8 @@ namespace crewbackend.Services
                 throw new ValidationException("role", $"Unable to assign role. Please contact administrator.");
             }
 
-            // Map UserCreateDTO to User entity
+            // Mapping logic stays in UserProfile.cs
+            // AutoMapper maps UserCreateDTO to User entity without Role as role is set separately
             var user = _mapper.Map<User>(userDto);
             user.RoleId = role.RoleId;
 
@@ -84,12 +106,16 @@ namespace crewbackend.Services
             _appDbContext.Users.Add(user);
             await _appDbContext.SaveChangesAsync();
 
+            // Map the user to a UserResponseMapper to return the user with the role
             return UserResponseMapper.MapToUserResponseDTO(user);
         }
 
-        public async Task<bool> UpdateUserAsync(int id, UserUpdateDTO userDto)
+        public async Task<UserResponseDTO> UpdateUserAsync(int id, UserUpdateDTO userDto)
         {
-            var existingUser = await _appDbContext.Users.FindAsync(id);
+            var existingUser = await _appDbContext.Users
+                .Include(u => u.Role)  // Include Role to ensure it's available for mapping
+                .FirstOrDefaultAsync(u => u.Id == id);
+                
             if (existingUser == null) 
             {
                 throw new EntityNotFoundException($"User with ID {id} not found.");
@@ -102,27 +128,51 @@ namespace crewbackend.Services
                 {
                     throw new ValidationException("password_confirmation", "The password confirmation does not match.");
                 }
-
+                
+                // Only hash and update password if it was provided
                 existingUser.Password = _passwordHasher.HashPassword(existingUser, userDto.Password);
             }
 
+            // Mapping logic stays in UserProfile.cs
+            // AutoMapper maps UserUpdateDTO to User entity
+            _mapper.Map(userDto, existingUser);
+
+            // Set timestamp after mapping
             existingUser.UpdatedAt = DateTime.UtcNow;
 
-            // Now map the rest of the properties (excluding Password)
-            _mapper.Map(userDto, existingUser);            
-
             await _appDbContext.SaveChangesAsync();
-            return true;
+
+            // Map (User -> UserResponseDTO) to a UserResponseMapper to return the user with the role
+            return UserResponseMapper.MapToUserResponseDTO(existingUser);
         }
-        public async Task<bool> DeleteUserAsync(int id)
+
+        public async Task<bool> DeleteUserAsync(int id, int deletedByUserId)
         {
-            var user = await _appDbContext.Users.FindAsync(id);
+            var user = await _appDbContext.Users
+                .Include(u => u.OrganisationUsers)
+                .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
+                
             if (user == null) 
             {
                 throw new EntityNotFoundException($"User with ID {id} not found.");
             }
 
-            _appDbContext.Users.Remove(user);
+            // Perform soft delete on user
+            user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
+            user.DeletedByUserId = deletedByUserId;
+
+            // Soft delete all OrganisationUser records
+            if (user.OrganisationUsers != null)
+            {
+                foreach (var orgUser in user.OrganisationUsers)
+                {
+                    orgUser.IsDeleted = true;
+                    orgUser.DeletedAt = DateTime.UtcNow;
+                    orgUser.DeletedByUserId = deletedByUserId;
+                }
+            }
+
             await _appDbContext.SaveChangesAsync();
             return true;
         }
@@ -133,7 +183,7 @@ namespace crewbackend.Services
 
             var user = await _appDbContext.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
             if (user == null) return null;
 
@@ -150,14 +200,17 @@ namespace crewbackend.Services
         public async Task<UserResponseDTO?> GetUserByEmailAsync(string email)
         {
             var user = await _appDbContext.Users
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
-            return user == null ? null : _mapper.Map<UserResponseDTO>(user);
+            return user == null ? null : UserResponseMapper.MapToUserResponseDTO(user);
         }        
 
         public IQueryable<User> QueryUsers()
         {
-            return _appDbContext.Users.Include(u => u.Role).AsQueryable();
+            return _appDbContext.Users
+                .Include(u => u.Role)
+                .Where(u => !u.IsDeleted)
+                .AsQueryable();
         }
     }
 }

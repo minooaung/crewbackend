@@ -16,5 +16,11 @@ namespace crewbackend.Models
 
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        
+        // Soft delete properties
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public int? DeletedByUserId { get; set; }
+        public User? DeletedByUser { get; set; }
     }
 }
