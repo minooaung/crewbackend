@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity; // For PasswordHasher<>
 using crewbackend.Models;
+using CrewBackend.Services.Reports;
+using CrewBackend.Services.Reports.Formatters;
 using CrewBackend.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +42,10 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Register report services
+builder.Services.AddSingleton<ReportFormatterFactory>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Register Seeder: make sure Seeder is registered in DI container
 builder.Services.AddScoped<Seeder>();

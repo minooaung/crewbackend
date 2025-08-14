@@ -38,13 +38,13 @@ namespace crewbackend.Services
 
             private async Task<BasicStatsDTO> GetBasicStatsAsync()
     {
-        var totalUsers = await _context.Users.CountAsync();
+        var totalUsers = await _context.Users.Where(u => !u.IsDeleted).CountAsync();
         var totalOrganizations = await _context.Set<Organisation>().CountAsync();
         var adminUsers = await _context.Users
-            .Where(u => u.Role.RoleName == UserRoleConstants.Admin)
+            .Where(u => !u.IsDeleted && u.Role.RoleName == UserRoleConstants.Admin)
             .CountAsync();
         var superAdminUsers = await _context.Users
-            .Where(u => u.Role.RoleName == UserRoleConstants.SuperAdmin)
+            .Where(u => !u.IsDeleted && u.Role.RoleName == UserRoleConstants.SuperAdmin)
             .CountAsync();
         var activeOrganizations = await _context.Set<Organisation>()
             .Include(o => o.OrganisationUsers)
@@ -64,15 +64,15 @@ namespace crewbackend.Services
     private async Task<UserRolesDTO> GetUserRoleStatsAsync()
     {
         var superAdminCount = await _context.Users
-            .Where(u => u.Role.RoleName == UserRoleConstants.SuperAdmin)
+            .Where(u => !u.IsDeleted && u.Role.RoleName == UserRoleConstants.SuperAdmin)
             .CountAsync();
 
         var adminCount = await _context.Users
-            .Where(u => u.Role.RoleName == UserRoleConstants.Admin)
+            .Where(u => !u.IsDeleted && u.Role.RoleName == UserRoleConstants.Admin)
             .CountAsync();
 
         var employeeCount = await _context.Users
-            .Where(u => u.Role.RoleName == UserRoleConstants.Employee)
+            .Where(u => !u.IsDeleted && u.Role.RoleName == UserRoleConstants.Employee)
             .CountAsync();
 
         return new UserRolesDTO
@@ -88,7 +88,7 @@ namespace crewbackend.Services
         var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
 
         var userGrowth = await _context.Users
-            .Where(u => u.CreatedAt != null && u.CreatedAt >= sixMonthsAgo)
+            .Where(u => !u.IsDeleted && u.CreatedAt != null && u.CreatedAt >= sixMonthsAgo)
             .GroupBy(u => u.CreatedAt!.Value.Month)
             .Select(g => new { Month = g.Key, Count = g.Count() })
             .OrderBy(x => x.Month)
