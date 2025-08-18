@@ -12,7 +12,7 @@ using crewbackend.Data;
 namespace crewbackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250814114825_InitialCreate")]
+    [Migration("20250818090708_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
