@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using crewbackend.DTOs;
+using CrewBackend.DTOs;
 
-namespace crewbackend.Services.Interfaces
+namespace CrewBackend.Services.Interfaces
 {
     public interface IDashboardService
     {

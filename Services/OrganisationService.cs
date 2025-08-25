@@ -1,16 +1,16 @@
 using AutoMapper;
-using crewbackend.Data;
-using crewbackend.DTOs;
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Data;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using CrewBackend.Exceptions.Domain;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using CrewBackend.Exceptions.Auth;
-using crewbackend.Helpers;
+using CrewBackend.Helpers;
 
-namespace crewbackend.Services
+namespace CrewBackend.Services
 {
     public class OrganisationService : IOrganisationService
     {

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using crewbackend.Models;
+using CrewBackend.Models;
 
-namespace crewbackend.Data
+namespace CrewBackend.Data
 {
     public class AppDbContext : DbContext
     {

@@ -1,10 +1,10 @@
 using System;
 using Xunit;
-using crewbackend.Models;
-using crewbackend.Services;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Models;
+using CrewBackend.Services;
+using CrewBackend.Services.Interfaces;
 
-namespace crewbackend.Tests.Services
+namespace CrewBackend.Tests.Services
 {
     public class RbacPolicyEvaluatorTests
     {

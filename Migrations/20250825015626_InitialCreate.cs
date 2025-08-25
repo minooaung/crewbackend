@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace crewbackend.Migrations
+namespace CrewBackend.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

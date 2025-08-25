@@ -1,6 +1,6 @@
 using System;
 
-namespace crewbackend.Models
+namespace CrewBackend.Models
 {
     // [Index(nameof(Email), IsUnique = true)]
     public class User{

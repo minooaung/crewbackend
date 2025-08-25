@@ -1,5 +1,5 @@
-using crewbackend.Data;
-using crewbackend.Models;
+using CrewBackend.Data;
+using CrewBackend.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrewBackend.Services.Reports

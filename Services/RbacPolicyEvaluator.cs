@@ -1,7 +1,7 @@
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 
-namespace crewbackend.Services
+namespace CrewBackend.Services
 {
     /// <summary>
     /// Centralized evaluator for RBAC policies based on role names and user relationships.

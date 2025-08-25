@@ -15,6 +15,6 @@ try {
     dotnet run # This will run Seeder.SeedAsync() and then start the application
 }
 catch {
-    Write-Error "❌ An error occurred: $_"
+    Write-Error "An error occurred: $_"
     exit 1
 }

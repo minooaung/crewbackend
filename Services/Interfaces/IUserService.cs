@@ -1,8 +1,8 @@
-using crewbackend.Models;
-using crewbackend.DTOs;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Models;
+using CrewBackend.DTOs;
+using CrewBackend.Services.Interfaces;
 
-namespace crewbackend.Services.Interfaces
+namespace CrewBackend.Services.Interfaces
 {
     public interface IUserService
     {

@@ -1,12 +1,12 @@
-using crewbackend.DTOs;
-using crewbackend.Services.Interfaces;
+using CrewBackend.DTOs;
+using CrewBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using crewbackend.Helpers;
+using CrewBackend.Helpers;
 using CrewBackend.Exceptions.Domain;
 
-namespace crewbackend.Controllers
+namespace CrewBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

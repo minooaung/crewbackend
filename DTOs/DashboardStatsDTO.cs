@@ -1,6 +1,6 @@
 using System;
 
-namespace crewbackend.DTOs
+namespace CrewBackend.DTOs
 {
     public class DashboardStatsDTO
     {

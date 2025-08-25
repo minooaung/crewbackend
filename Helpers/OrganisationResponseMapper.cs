@@ -1,7 +1,7 @@
-using crewbackend.DTOs;
-using crewbackend.Models;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
 
-namespace crewbackend.Helpers
+namespace CrewBackend.Helpers
 {
     public static class OrganisationResponseMapper
     {

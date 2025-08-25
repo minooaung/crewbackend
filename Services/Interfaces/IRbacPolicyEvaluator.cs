@@ -1,6 +1,6 @@
-using crewbackend.Models;
+using CrewBackend.Models;
 
-namespace crewbackend.Services.Interfaces
+namespace CrewBackend.Services.Interfaces
 {
     /// <summary>
     /// Defines role-based access control evaluation logic for create, update, and delete operations.

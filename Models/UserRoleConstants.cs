@@ -1,4 +1,4 @@
-namespace crewbackend.Models
+namespace CrewBackend.Models
 {
     public static class UserRoleConstants
     {

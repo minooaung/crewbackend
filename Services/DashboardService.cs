@@ -2,12 +2,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using crewbackend.Data;
-using crewbackend.DTOs;
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Data;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 
-namespace crewbackend.Services
+namespace CrewBackend.Services
 {
     public class DashboardService : IDashboardService
     {

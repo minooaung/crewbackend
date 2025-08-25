@@ -1,5 +1,5 @@
 using System.Text.Json;
-using crewbackend.Models;
+using CrewBackend.Models;
 
 namespace CrewBackend.Services.Reports.Formatters
 {

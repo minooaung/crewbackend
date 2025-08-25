@@ -1,8 +1,8 @@
 using AutoMapper;
-using crewbackend.DTOs;
-using crewbackend.Models;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
 
-namespace crewbackend.MappingProfiles
+namespace CrewBackend.MappingProfiles
 {
     public class UserProfile : Profile
     {

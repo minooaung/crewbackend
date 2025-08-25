@@ -1,16 +1,16 @@
-using crewbackend.DTOs;
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using AutoMapper;
-using crewbackend.Helpers;
+using CrewBackend.Helpers;
 using CrewBackend.Exceptions.Domain;
 using CrewBackend.Exceptions.Auth;
 
-namespace crewbackend.Controllers
+namespace CrewBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
