@@ -7,6 +7,7 @@ using CrewBackend.Helpers;
 using CrewBackend.Exceptions.Domain;
 using CrewBackend.Exceptions.Auth;
 using System.Security.Claims;
+using CrewBackend.Models;
 
 namespace CrewBackend.Controllers
 {
@@ -15,13 +16,66 @@ namespace CrewBackend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IRbacPolicyEvaluator _rbac;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, IRbacPolicyEvaluator rbac)
         {
             _userService = userService;
+            _rbac = rbac;
+        }
+
+        /// <summary>
+        /// Helper method to normalize role names to match UserRoleConstants
+        /// </summary>
+        private string NormalizeRoleName(string? roleName)
+        {
+            if (string.IsNullOrWhiteSpace(roleName))
+                return UserRoleConstants.Employee; // Default role
+                
+            var normalized = roleName.Trim();
+            
+            return normalized.ToUpperInvariant() switch
+            {
+                "EMPLOYEE" => UserRoleConstants.Employee,
+                "ADMIN" => UserRoleConstants.Admin,
+                "SUPERADMIN" => UserRoleConstants.SuperAdmin,
+                _ => normalized // Return as-is if no match
+            };
+        }
+
+        /// <summary>
+        /// Helper method to get the current authenticated user from JWT claims
+        /// </summary>
+        private async Task<User> GetCurrentUserAsync()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
+            {
+                throw new AuthorizationException("User ID not found in claims or invalid");
+            }
+
+            // QueryUsers already includes Role and filters deleted users
+            var currentUser = await _userService.QueryUsers()
+                .Where(u => u.Id == currentUserId)
+                .FirstOrDefaultAsync();
+                
+            if (currentUser == null)
+            {
+                throw new AuthorizationException("Current user not found");
+            }
+
+            // Additional debug - let's see if the role is loaded at this point
+            Console.WriteLine($"GetCurrentUserAsync - Role loaded: {currentUser.Role != null}");
+            if (currentUser.Role != null)
+            {
+                Console.WriteLine($"GetCurrentUserAsync - Role Name: {currentUser.Role.RoleName}");
+            }
+
+            return currentUser;
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult> GetUsers(
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 10, 
@@ -104,6 +158,7 @@ namespace CrewBackend.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<UserResponseDTO>> GetUserById(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
@@ -116,10 +171,29 @@ namespace CrewBackend.Controllers
             return Ok(user);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateUser([FromBody] UserCreateDTO userDto)
         {
+            // Get the current authenticated user for RBAC evaluation
+            var actor = await GetCurrentUserAsync();
+
+            // Normalize the target role to handle case mismatches
+            var targetRole = NormalizeRoleName(userDto.Role);
+            
+            Console.WriteLine($"=== RBAC DEBUG ===");
+            Console.WriteLine($"Raw userDto.Role: '{userDto.Role}'");
+            Console.WriteLine($"Normalized target role: '{targetRole}'");
+            Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            
+            // Check RBAC permission for creating user with specified role
+            var canCreate = _rbac.CanCreate(actor, targetRole);
+            Console.WriteLine($"RBAC CanCreate result: {canCreate}");
+            Console.WriteLine($"==================");
+
+            if (!canCreate)
+                throw new AuthorizationException($"You are not allowed to create users with role '{targetRole}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState
@@ -135,10 +209,36 @@ namespace CrewBackend.Controllers
             return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDTO userDto)
         {
+            // Get the current authenticated user for RBAC evaluation
+            var actor = await GetCurrentUserAsync();
+
+            // Get the target user object for RBAC evaluation
+            var target = await _userService.QueryUsers()
+                .Where(u => u.Id == id)
+                .FirstOrDefaultAsync();
+            if (target == null)
+            {
+                throw new EntityNotFoundException($"User with ID {id} not found.");
+            }
+
+            Console.WriteLine($"=== UPDATE RBAC DEBUG ===");
+            Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            Console.WriteLine($"Target user: '{target.Name}' (ID: {target.Id})");
+            Console.WriteLine($"Target role: '{target.Role?.RoleName ?? "NULL"}'");
+            Console.WriteLine($"Is self-update: {actor.Id == target.Id}");
+
+            // Check RBAC permission for updating this user
+            var canUpdate = _rbac.CanUpdate(actor, target);
+            Console.WriteLine($"RBAC CanUpdate result: {canUpdate}");
+            Console.WriteLine($"========================");
+
+            if (!canUpdate)
+                throw new AuthorizationException($"You are not allowed to update user '{target.Name}' with role '{target.Role?.RoleName ?? "NULL"}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState
@@ -152,23 +252,44 @@ namespace CrewBackend.Controllers
 
             var updatedUser = await _userService.UpdateUserAsync(id, userDto);
             return Ok(updatedUser);
-        }
+        }        
 
-        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            // Get the current authenticated user for RBAC evaluation
+            var actor = await GetCurrentUserAsync();
+
+            // Get the target user object for RBAC evaluation
+            var target = await _userService.QueryUsers()
+                .Where(u => u.Id == id)
+                .FirstOrDefaultAsync();
+            if (target == null)
             {
-                throw new AuthorizationException("User ID not found in claims or invalid");
+                throw new EntityNotFoundException($"User with ID {id} not found.");
             }
+
+            Console.WriteLine($"=== DELETE RBAC DEBUG ===");
+            Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            Console.WriteLine($"Target user: '{target.Name}' (ID: {target.Id})");
+            Console.WriteLine($"Target role: '{target.Role?.RoleName ?? "NULL"}'");
+            Console.WriteLine($"Is self-delete: {actor.Id == target.Id}");
+
+            // Check RBAC permission for deleting this user
+            var canDelete = _rbac.CanDelete(actor, target);
+            Console.WriteLine($"RBAC CanDelete result: {canDelete}");
+            Console.WriteLine($"========================");
+
+            if (!canDelete)
+                throw new AuthorizationException($"You are not allowed to delete user '{target.Name}' with role '{target.Role?.RoleName ?? "NULL"}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
             
-            await _userService.DeleteUserAsync(id, userId);
+            await _userService.DeleteUserAsync(id, actor.Id);
             return NoContent();
         }
 
         [HttpGet("selected")]
+        [Authorize]
         public async Task<ActionResult> GetSelectedUsers([FromQuery] string ids)
         {
             if (string.IsNullOrEmpty(ids))

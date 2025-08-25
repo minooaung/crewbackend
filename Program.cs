@@ -42,6 +42,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IRbacPolicyEvaluator, RbacPolicyEvaluator>();
 
 // Register report services
 builder.Services.AddSingleton<ReportFormatterFactory>();
