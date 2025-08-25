@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using crewbackend.Validators;
+using CrewBackend.Validators;
 
-namespace crewbackend.DTOs
+namespace CrewBackend.DTOs
 {
     public class UserUpdateDTO
     {

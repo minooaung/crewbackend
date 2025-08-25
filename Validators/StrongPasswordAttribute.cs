@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 
-namespace crewbackend.Validators
+namespace CrewBackend.Validators
 {
     public class StrongPasswordAttribute : ValidationAttribute
     {

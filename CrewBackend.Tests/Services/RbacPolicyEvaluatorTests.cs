@@ -1,10 +1,10 @@
 using System;
 using Xunit;
-using crewbackend.Models;
-using crewbackend.Services;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Models;
+using CrewBackend.Services;
+using CrewBackend.Services.Interfaces;
 
-namespace crewbackend.Tests.Services
+namespace CrewBackend.Tests.Services
 {
     public class RbacPolicyEvaluatorTests
     {
@@ -93,6 +93,43 @@ namespace crewbackend.Tests.Services
             var user = CreateUser(1, roleName);
             var result = _evaluator.CanDelete(user, user);
             Assert.False(result);
+        }
+
+        // ===============================
+        // Organisation RBAC Tests
+        // ===============================
+
+        [Theory]
+        [InlineData(UserRoleConstants.SuperAdmin, true)]
+        [InlineData(UserRoleConstants.Admin, true)]
+        [InlineData(UserRoleConstants.Employee, false)]
+        public void CanCreateOrganisation_ShouldMatchPolicy(string actorRole, bool expected)
+        {
+            var actor = CreateUser(1, actorRole);
+            var result = _evaluator.CanCreateOrganisation(actor);
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData(UserRoleConstants.SuperAdmin, true)]
+        [InlineData(UserRoleConstants.Admin, true)]
+        [InlineData(UserRoleConstants.Employee, false)]
+        public void CanUpdateOrganisation_ShouldMatchPolicy(string actorRole, bool expected)
+        {
+            var actor = CreateUser(1, actorRole);
+            var result = _evaluator.CanUpdateOrganisation(actor);
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData(UserRoleConstants.SuperAdmin, true)]
+        [InlineData(UserRoleConstants.Admin, true)]
+        [InlineData(UserRoleConstants.Employee, false)]
+        public void CanDeleteOrganisation_ShouldMatchPolicy(string actorRole, bool expected)
+        {
+            var actor = CreateUser(1, actorRole);
+            var result = _evaluator.CanDeleteOrganisation(actor);
+            Assert.Equal(expected, result);
         }
     }
 }

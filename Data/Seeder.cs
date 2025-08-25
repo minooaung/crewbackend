@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using crewbackend.Models;
+using CrewBackend.Models;
 
-namespace crewbackend.Data
+namespace CrewBackend.Data
 {
     public class Seeder
     {

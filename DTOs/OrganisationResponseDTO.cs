@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace crewbackend.DTOs
+namespace CrewBackend.DTOs
 {
     public class OrganisationResponseDTO
     {

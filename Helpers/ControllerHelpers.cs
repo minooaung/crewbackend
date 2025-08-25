@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using CrewBackend.Exceptions.Domain;
 
-namespace crewbackend.Helpers
+namespace CrewBackend.Helpers
 {
     public static class ControllerHelpers
     {

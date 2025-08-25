@@ -1,7 +1,7 @@
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 
-namespace crewbackend.Services
+namespace CrewBackend.Services
 {
     /// <summary>
     /// Centralized evaluator for RBAC policies based on role names and user relationships.
@@ -48,6 +48,42 @@ namespace crewbackend.Services
             {
                 UserRoleConstants.SuperAdmin => true,
                 UserRoleConstants.Admin => targetRole == UserRoleConstants.Employee,
+                _ => false
+            };
+        }
+
+        public bool CanCreateOrganisation(User actor)
+        {
+            var actorRole = actor.Role.RoleName;
+
+            return actorRole switch
+            {
+                UserRoleConstants.SuperAdmin => true,
+                UserRoleConstants.Admin => true,
+                _ => false
+            };
+        }
+
+        public bool CanUpdateOrganisation(User actor)
+        {
+            var actorRole = actor.Role.RoleName;
+
+            return actorRole switch
+            {
+                UserRoleConstants.SuperAdmin => true,
+                UserRoleConstants.Admin => true,
+                _ => false
+            };
+        }
+
+        public bool CanDeleteOrganisation(User actor)
+        {
+            var actorRole = actor.Role.RoleName;
+
+            return actorRole switch
+            {
+                UserRoleConstants.SuperAdmin => true,
+                UserRoleConstants.Admin => true,
                 _ => false
             };
         }

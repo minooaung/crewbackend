@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using crewbackend.Data;
-using crewbackend.Models;
+using CrewBackend.Data;
+using CrewBackend.Models;
 
-namespace crewbackend.Controllers
+namespace CrewBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

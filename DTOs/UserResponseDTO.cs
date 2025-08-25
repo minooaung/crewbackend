@@ -1,4 +1,4 @@
-namespace crewbackend.DTOs
+namespace CrewBackend.DTOs
 {
     public class UserResponseDTO
     {

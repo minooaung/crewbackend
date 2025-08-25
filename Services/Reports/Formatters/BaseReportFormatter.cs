@@ -19,16 +19,25 @@ namespace CrewBackend.Services.Reports.Formatters
                 int counter = 1;
                 foreach (var orgUser in organisationUsers)
                 {
+                    // Check if the organisation user relationship is not deleted
+                    var isOrgUserDeleted = orgUser.GetType().GetProperty("IsDeleted")?.GetValue(orgUser) as bool? ?? false;
+                    if (isOrgUserDeleted) continue;
+
                     var user = orgUser.GetType().GetProperty("User")?.GetValue(orgUser);
                     if (user != null)
                     {
+                        // Check if the user is not deleted
+                        var isUserDeleted = user.GetType().GetProperty("IsDeleted")?.GetValue(user) as bool? ?? false;
+                        if (isUserDeleted) continue;
+
                         var name = user.GetType().GetProperty("Name")?.GetValue(user)?.ToString();
                         var email = user.GetType().GetProperty("Email")?.GetValue(user)?.ToString();
                         userList.Add($"{counter} - {name} ({email})");
                         counter++;
                     }
                 }
-                return string.Join("\n", userList);
+                
+                return userList.Any() ? string.Join("\n", userList) : "No assigned users";
             }
 
             // Handle nested properties (e.g., "Role.RoleName")

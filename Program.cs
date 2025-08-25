@@ -1,10 +1,10 @@
-using crewbackend.Data;
-using crewbackend.Services.Interfaces;
-using crewbackend.Services;
+using CrewBackend.Data;
+using CrewBackend.Services.Interfaces;
+using CrewBackend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity; // For PasswordHasher<>
-using crewbackend.Models;
+using CrewBackend.Models;
 using CrewBackend.Services.Reports;
 using CrewBackend.Services.Reports.Formatters;
 using CrewBackend.Middlewares;
@@ -42,6 +42,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IRbacPolicyEvaluator, RbacPolicyEvaluator>();
 
 // Register report services
 builder.Services.AddSingleton<ReportFormatterFactory>();

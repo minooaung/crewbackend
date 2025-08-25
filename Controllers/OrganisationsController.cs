@@ -1,25 +1,57 @@
-using crewbackend.DTOs;
-using crewbackend.Services.Interfaces;
+using CrewBackend.DTOs;
+using CrewBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using crewbackend.Helpers;
+using CrewBackend.Helpers;
 using CrewBackend.Exceptions.Domain;
+using CrewBackend.Exceptions.Auth;
+using CrewBackend.Models;
+using System.Security.Claims;
 
-namespace crewbackend.Controllers
+namespace CrewBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class OrganisationsController : ControllerBase
     {
         private readonly IOrganisationService _organisationService;
+        private readonly IRbacPolicyEvaluator _rbac;
+        private readonly IUserService _userService;
 
-        public OrganisationsController(IOrganisationService organisationService)
+        public OrganisationsController(IOrganisationService organisationService, IRbacPolicyEvaluator rbac, IUserService userService)
         {
             _organisationService = organisationService;
+            _rbac = rbac;
+            _userService = userService;
+        }
+
+        /// <summary>
+        /// Helper method to get the current authenticated user from JWT claims
+        /// </summary>
+        private async Task<User> GetCurrentUserAsync()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int currentUserId))
+            {
+                throw new AuthorizationException("User ID not found in claims or invalid");
+            }
+
+            // QueryUsers already includes Role and filters deleted users
+            var currentUser = await _userService.QueryUsers()
+                .Where(u => u.Id == currentUserId)
+                .FirstOrDefaultAsync();
+                
+            if (currentUser == null)
+            {
+                throw new AuthorizationException("Current user not found");
+            }
+
+            return currentUser;
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult> GetOrganisations(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -110,6 +142,7 @@ namespace crewbackend.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<OrganisationResponseDTO>> GetOrganisationById(int id)
         {
             var organisation = await _organisationService.GetOrganisationByIdAsync(id);
@@ -122,10 +155,25 @@ namespace crewbackend.Controllers
             return Ok(organisation);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateOrganisation([FromBody] OrganisationCreateDTO orgDto)
         {
+            // Get the current authenticated user for RBAC evaluation
+            var actor = await GetCurrentUserAsync();
+
+            // Console.WriteLine($"=== CREATE ORG RBAC DEBUG ===");
+            // Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Organisation name: '{orgDto.OrgName}'");
+            
+            // Check RBAC permission for creating organisations
+            var canCreate = _rbac.CanCreateOrganisation(actor);
+            // Console.WriteLine($"RBAC CanCreateOrganisation result: {canCreate}");
+            // Console.WriteLine($"============================");
+
+            if (!canCreate)
+                throw new AuthorizationException($"You are not allowed to create organisations. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState
@@ -141,10 +189,32 @@ namespace crewbackend.Controllers
             return CreatedAtAction(nameof(GetOrganisationById), new { id = createdOrg.OrgId }, createdOrg);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateOrganisation(int id, [FromBody] OrganisationUpdateDTO orgDto)
         {
+            // Get the current authenticated user for RBAC evaluation
+            var actor = await GetCurrentUserAsync();
+
+            // Get the target organisation to show in debug/error messages
+            var targetOrg = await _organisationService.GetOrganisationByIdAsync(id);
+            if (targetOrg == null)
+            {
+                throw new EntityNotFoundException($"Organisation with ID {id} not found.");
+            }
+
+            // Console.WriteLine($"=== UPDATE ORG RBAC DEBUG ===");
+            // Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Target organisation: '{targetOrg.OrgName}' (ID: {targetOrg.OrgId})");
+            
+            // Check RBAC permission for updating organisations
+            var canUpdate = _rbac.CanUpdateOrganisation(actor);
+            // Console.WriteLine($"RBAC CanUpdateOrganisation result: {canUpdate}");
+            // Console.WriteLine($"============================");
+
+            if (!canUpdate)
+                throw new AuthorizationException($"You are not allowed to update organisation '{targetOrg.OrgName}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState
@@ -160,10 +230,32 @@ namespace crewbackend.Controllers
             return Ok(updatedOrg);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteOrganisation(int id)
         {
+            // Get the current authenticated user for RBAC evaluation
+            var actor = await GetCurrentUserAsync();
+
+            // Get the target organisation to show in debug/error messages
+            var targetOrg = await _organisationService.GetOrganisationByIdAsync(id);
+            if (targetOrg == null)
+            {
+                throw new EntityNotFoundException($"Organisation with ID {id} not found.");
+            }
+
+            // Console.WriteLine($"=== DELETE ORG RBAC DEBUG ===");
+            // Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Target organisation: '{targetOrg.OrgName}' (ID: {targetOrg.OrgId})");
+            
+            // Check RBAC permission for deleting organisations
+            var canDelete = _rbac.CanDeleteOrganisation(actor);
+            // Console.WriteLine($"RBAC CanDeleteOrganisation result: {canDelete}");
+            // Console.WriteLine($"============================");
+
+            if (!canDelete)
+                throw new AuthorizationException($"You are not allowed to delete organisation '{targetOrg.OrgName}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
+
             await _organisationService.DeleteOrganisationAsync(id);
             return NoContent();
         }

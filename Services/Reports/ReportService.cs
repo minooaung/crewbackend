@@ -1,5 +1,5 @@
-using crewbackend.Data;
-using crewbackend.Models;
+using CrewBackend.Data;
+using CrewBackend.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrewBackend.Services.Reports
@@ -56,6 +56,7 @@ namespace CrewBackend.Services.Reports
         {
             var users = await _context.Users
                 .Include(u => u.Role)
+                .Where(u => !u.IsDeleted)  // Exclude soft-deleted users
                 .OrderBy(u => u.Id)
                 .ToListAsync();
 
@@ -71,9 +72,10 @@ namespace CrewBackend.Services.Reports
             Dictionary<string, string> columns)
         {
             var organisations = await _context.Organisations
-                .Include(o => o.OrganisationUsers)
+                .Include(o => o.OrganisationUsers.Where(ou => !ou.IsDeleted))
                     .ThenInclude(ou => ou.User)
                         .ThenInclude(u => u.Role)
+                .Where(o => !o.IsDeleted)  // Exclude soft-deleted organisations
                 .OrderBy(o => o.OrgId)
                 .ToListAsync();
 

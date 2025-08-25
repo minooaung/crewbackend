@@ -1,14 +1,14 @@
 using AutoMapper;
-using crewbackend.Data;
-using crewbackend.DTOs;
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Data;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using crewbackend.Helpers;
+using CrewBackend.Helpers;
 using CrewBackend.Exceptions.Domain;
 
-namespace crewbackend.Services
+namespace CrewBackend.Services
 {
     public class UserService : IUserService
     {
