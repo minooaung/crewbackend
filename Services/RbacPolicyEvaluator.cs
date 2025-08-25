@@ -51,5 +51,41 @@ namespace CrewBackend.Services
                 _ => false
             };
         }
+
+        public bool CanCreateOrganisation(User actor)
+        {
+            var actorRole = actor.Role.RoleName;
+
+            return actorRole switch
+            {
+                UserRoleConstants.SuperAdmin => true,
+                UserRoleConstants.Admin => true,
+                _ => false
+            };
+        }
+
+        public bool CanUpdateOrganisation(User actor)
+        {
+            var actorRole = actor.Role.RoleName;
+
+            return actorRole switch
+            {
+                UserRoleConstants.SuperAdmin => true,
+                UserRoleConstants.Admin => true,
+                _ => false
+            };
+        }
+
+        public bool CanDeleteOrganisation(User actor)
+        {
+            var actorRole = actor.Role.RoleName;
+
+            return actorRole switch
+            {
+                UserRoleConstants.SuperAdmin => true,
+                UserRoleConstants.Admin => true,
+                _ => false
+            };
+        }
     }
 }

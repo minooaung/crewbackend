@@ -94,5 +94,42 @@ namespace CrewBackend.Tests.Services
             var result = _evaluator.CanDelete(user, user);
             Assert.False(result);
         }
+
+        // ===============================
+        // Organisation RBAC Tests
+        // ===============================
+
+        [Theory]
+        [InlineData(UserRoleConstants.SuperAdmin, true)]
+        [InlineData(UserRoleConstants.Admin, true)]
+        [InlineData(UserRoleConstants.Employee, false)]
+        public void CanCreateOrganisation_ShouldMatchPolicy(string actorRole, bool expected)
+        {
+            var actor = CreateUser(1, actorRole);
+            var result = _evaluator.CanCreateOrganisation(actor);
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData(UserRoleConstants.SuperAdmin, true)]
+        [InlineData(UserRoleConstants.Admin, true)]
+        [InlineData(UserRoleConstants.Employee, false)]
+        public void CanUpdateOrganisation_ShouldMatchPolicy(string actorRole, bool expected)
+        {
+            var actor = CreateUser(1, actorRole);
+            var result = _evaluator.CanUpdateOrganisation(actor);
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData(UserRoleConstants.SuperAdmin, true)]
+        [InlineData(UserRoleConstants.Admin, true)]
+        [InlineData(UserRoleConstants.Employee, false)]
+        public void CanDeleteOrganisation_ShouldMatchPolicy(string actorRole, bool expected)
+        {
+            var actor = CreateUser(1, actorRole);
+            var result = _evaluator.CanDeleteOrganisation(actor);
+            Assert.Equal(expected, result);
+        }
     }
 }

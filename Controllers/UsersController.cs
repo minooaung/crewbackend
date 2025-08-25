@@ -65,11 +65,11 @@ namespace CrewBackend.Controllers
             }
 
             // Additional debug - let's see if the role is loaded at this point
-            Console.WriteLine($"GetCurrentUserAsync - Role loaded: {currentUser.Role != null}");
-            if (currentUser.Role != null)
-            {
-                Console.WriteLine($"GetCurrentUserAsync - Role Name: {currentUser.Role.RoleName}");
-            }
+            // Console.WriteLine($"GetCurrentUserAsync - Role loaded: {currentUser.Role != null}");
+            // if (currentUser.Role != null)
+            // {
+            //     Console.WriteLine($"GetCurrentUserAsync - Role Name: {currentUser.Role.RoleName}");
+            // }
 
             return currentUser;
         }
@@ -181,15 +181,15 @@ namespace CrewBackend.Controllers
             // Normalize the target role to handle case mismatches
             var targetRole = NormalizeRoleName(userDto.Role);
             
-            Console.WriteLine($"=== RBAC DEBUG ===");
-            Console.WriteLine($"Raw userDto.Role: '{userDto.Role}'");
-            Console.WriteLine($"Normalized target role: '{targetRole}'");
-            Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"=== RBAC DEBUG ===");
+            // Console.WriteLine($"Raw userDto.Role: '{userDto.Role}'");
+            // Console.WriteLine($"Normalized target role: '{targetRole}'");
+            // Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
             
             // Check RBAC permission for creating user with specified role
             var canCreate = _rbac.CanCreate(actor, targetRole);
-            Console.WriteLine($"RBAC CanCreate result: {canCreate}");
-            Console.WriteLine($"==================");
+            // Console.WriteLine($"RBAC CanCreate result: {canCreate}");
+            // Console.WriteLine($"==================");
 
             if (!canCreate)
                 throw new AuthorizationException($"You are not allowed to create users with role '{targetRole}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
@@ -225,16 +225,16 @@ namespace CrewBackend.Controllers
                 throw new EntityNotFoundException($"User with ID {id} not found.");
             }
 
-            Console.WriteLine($"=== UPDATE RBAC DEBUG ===");
-            Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
-            Console.WriteLine($"Target user: '{target.Name}' (ID: {target.Id})");
-            Console.WriteLine($"Target role: '{target.Role?.RoleName ?? "NULL"}'");
-            Console.WriteLine($"Is self-update: {actor.Id == target.Id}");
+            // Console.WriteLine($"=== UPDATE RBAC DEBUG ===");
+            // Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Target user: '{target.Name}' (ID: {target.Id})");
+            // Console.WriteLine($"Target role: '{target.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Is self-update: {actor.Id == target.Id}");
 
             // Check RBAC permission for updating this user
             var canUpdate = _rbac.CanUpdate(actor, target);
-            Console.WriteLine($"RBAC CanUpdate result: {canUpdate}");
-            Console.WriteLine($"========================");
+            // Console.WriteLine($"RBAC CanUpdate result: {canUpdate}");
+            // Console.WriteLine($"========================");
 
             if (!canUpdate)
                 throw new AuthorizationException($"You are not allowed to update user '{target.Name}' with role '{target.Role?.RoleName ?? "NULL"}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");
@@ -270,16 +270,16 @@ namespace CrewBackend.Controllers
                 throw new EntityNotFoundException($"User with ID {id} not found.");
             }
 
-            Console.WriteLine($"=== DELETE RBAC DEBUG ===");
-            Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
-            Console.WriteLine($"Target user: '{target.Name}' (ID: {target.Id})");
-            Console.WriteLine($"Target role: '{target.Role?.RoleName ?? "NULL"}'");
-            Console.WriteLine($"Is self-delete: {actor.Id == target.Id}");
+            // Console.WriteLine($"=== DELETE RBAC DEBUG ===");
+            // Console.WriteLine($"Actor role: '{actor.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Target user: '{target.Name}' (ID: {target.Id})");
+            // Console.WriteLine($"Target role: '{target.Role?.RoleName ?? "NULL"}'");
+            // Console.WriteLine($"Is self-delete: {actor.Id == target.Id}");
 
             // Check RBAC permission for deleting this user
             var canDelete = _rbac.CanDelete(actor, target);
-            Console.WriteLine($"RBAC CanDelete result: {canDelete}");
-            Console.WriteLine($"========================");
+            // Console.WriteLine($"RBAC CanDelete result: {canDelete}");
+            // Console.WriteLine($"========================");
 
             if (!canDelete)
                 throw new AuthorizationException($"You are not allowed to delete user '{target.Name}' with role '{target.Role?.RoleName ?? "NULL"}'. Your role is '{actor.Role?.RoleName ?? "NULL"}'.");

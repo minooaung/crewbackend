@@ -39,7 +39,7 @@ namespace CrewBackend.Services
             private async Task<BasicStatsDTO> GetBasicStatsAsync()
     {
         var totalUsers = await _context.Users.Where(u => !u.IsDeleted).CountAsync();
-        var totalOrganizations = await _context.Set<Organisation>().CountAsync();
+        var totalOrganizations = await _context.Set<Organisation>().Where(o => !o.IsDeleted).CountAsync();
         var adminUsers = await _context.Users
             .Where(u => !u.IsDeleted && u.Role.RoleName == UserRoleConstants.Admin)
             .CountAsync();
@@ -48,7 +48,7 @@ namespace CrewBackend.Services
             .CountAsync();
         var activeOrganizations = await _context.Set<Organisation>()
             .Include(o => o.OrganisationUsers)
-            .Where(o => o.OrganisationUsers.Any())
+            .Where(o => !o.IsDeleted && o.OrganisationUsers.Any(ou => !ou.IsDeleted))
             .CountAsync();
 
         return new BasicStatsDTO
@@ -95,7 +95,7 @@ namespace CrewBackend.Services
             .ToListAsync();
 
         var orgGrowth = await _context.Set<Organisation>()
-            .Where(o => o.CreatedAt >= sixMonthsAgo)
+            .Where(o => !o.IsDeleted && o.CreatedAt >= sixMonthsAgo)
             .GroupBy(o => o.CreatedAt.Month)
             .Select(g => new { Month = g.Key, Count = g.Count() })
             .OrderBy(x => x.Month)

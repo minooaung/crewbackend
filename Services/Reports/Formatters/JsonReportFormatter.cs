@@ -46,7 +46,7 @@ namespace CrewBackend.Services.Reports.Formatters
                 CreatedAt = org.CreatedAt.ToString("dd/MM/yyyy hh:mm:ss tt").ToLower(),
                 AssignedUsers = org.OrganisationUsers?.Any() == true 
                     ? org.OrganisationUsers
-                        .Where(ou => ou.User != null && ou.User.Role != null)
+                        .Where(ou => !ou.IsDeleted && ou.User != null && !ou.User.IsDeleted && ou.User.Role != null)
                         .Select(ou => new
                         {
                             Name = ou.User.Name,
