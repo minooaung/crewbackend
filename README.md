@@ -5,6 +5,7 @@ A modern, enterprise-grade ASP.NET Core Web API backend for managing organizatio
 ## Key Features
 
 ### Authentication & Security
+
 - Cookie-based authentication with secure session management
 - Role-based authorization (Admin, Employee)
 - Secure password handling using ASP.NET Core's `IPasswordHasher`
@@ -12,6 +13,7 @@ A modern, enterprise-grade ASP.NET Core Web API backend for managing organizatio
 - CORS configuration for frontend integration
 
 ### User & Organization Management
+
 - Complete user lifecycle management (CRUD operations)
 - Organization management with multi-user support
 - Role-based access control (RBAC)
@@ -19,6 +21,7 @@ A modern, enterprise-grade ASP.NET Core Web API backend for managing organizatio
 - Email uniqueness validation and conflict resolution
 
 ### Architecture & Design Patterns
+
 - Clean Architecture with separation of concerns
 - Repository pattern with Entity Framework Core
 - SOLID principles implementation
@@ -28,6 +31,7 @@ A modern, enterprise-grade ASP.NET Core Web API backend for managing organizatio
 - DTOs for request/response handling
 
 ### Data & Persistence
+
 - Entity Framework Core with SQL Server
 - Code-first migrations
 - Database seeding with initial data
@@ -35,6 +39,7 @@ A modern, enterprise-grade ASP.NET Core Web API backend for managing organizatio
 - Soft delete implementation for data integrity
 
 ### API Features
+
 - RESTful API design
 - Swagger/OpenAPI documentation
 - Custom model validation
@@ -43,12 +48,14 @@ A modern, enterprise-grade ASP.NET Core Web API backend for managing organizatio
 - Standardized API responses
 
 ### Dashboard & Analytics
+
 - Organization growth tracking
 - User role distribution analytics
 - Quick action capabilities
 - Real-time statistics
 
 ### Development & DevOps
+
 - Automated setup scripts for Windows and Unix systems
 - Environment-specific configurations
 - Development and production environment separation
@@ -110,6 +117,7 @@ chmod +x setup.sh
 ### Manual Setup
 
 1. Configure your database connection in `appsettings.json`:
+
 ```json
 {
   "ConnectionStrings": {
@@ -119,6 +127,7 @@ chmod +x setup.sh
 ```
 
 2. Run the following commands:
+
 ```bash
 dotnet ef database drop --force --no-build
 dotnet ef migrations add InitialCreate
@@ -151,15 +160,3 @@ The API provides the following main endpoints:
 2. Add/update migrations: `dotnet ef migrations add YourMigrationName`
 3. Update database: `dotnet ef database update`
 4. Run the application: `dotnet run`
-
-## Note for Contributors
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
