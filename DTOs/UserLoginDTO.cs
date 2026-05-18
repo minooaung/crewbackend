@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace crewbackend.DTOs
+namespace CrewBackend.DTOs
 {
     public class UserLoginDTO
     {

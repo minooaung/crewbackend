@@ -1,55 +1,76 @@
 using System.Net;
 using System.Text.Json;
-using crewbackend.Exceptions;
-public class ErrorHandlerMiddleware
+using CrewBackend.Exceptions.Base;
+using CrewBackend.Exceptions.Domain;
+using CrewBackend.Models.Responses;
+
+namespace CrewBackend.Middlewares
 {
-    private readonly RequestDelegate _next;
-
-    public ErrorHandlerMiddleware(RequestDelegate next)
+    public class ErrorHandlerMiddleware
     {
-        _next = next;
-    }
+        private readonly RequestDelegate _next;
+        private readonly ILogger<ErrorHandlerMiddleware> _logger;
+        private readonly IHostEnvironment _environment;
 
-    public async Task Invoke(HttpContext context)
-    {
-        try
+        public ErrorHandlerMiddleware(
+            RequestDelegate next,
+            ILogger<ErrorHandlerMiddleware> logger,
+            IHostEnvironment environment)
         {
-            await _next(context);
+            _next = next;
+            _logger = logger;
+            _environment = environment;
         }
-        catch (ValidationException ex)
+
+        public async Task Invoke(HttpContext context)
         {
-            await HandleValidationExceptionAsync(context, ex);
+            try
+            {
+                await _next(context);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "An error occurred while processing the request");
+                await HandleExceptionAsync(context, exception);
+            }
         }
-        catch (Exception ex)
+
+        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            await HandleExceptionAsync(context, ex);
+            context.Response.ContentType = "application/json";
+
+            var response = new ErrorResponse 
+            { 
+                Error = "An unexpected error occurred. Please try again later." // Default error message
+            };
+
+            switch (exception)
+            {
+                case ValidationException validationException:
+                    context.Response.StatusCode = (int)HttpStatusCode.UnprocessableEntity;
+                    response.Error = validationException.ErrorMessage;
+                    response.Details = validationException.Details;
+                    break;
+
+                case AppException appException:
+                    context.Response.StatusCode = (int)appException.StatusCode;
+                    response.Error = appException.ErrorMessage;
+                    break;
+
+                default:
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    response.Error = _environment.IsDevelopment() 
+                        ? exception.Message 
+                        : "An unexpected error occurred. Please try again later.";
+                    break;
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
         }
-    }
-
-    private Task HandleValidationExceptionAsync(HttpContext context, ValidationException ex)
-    {
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-
-        var result = new
-        {
-            errors = ex.Errors
-        };
-
-        return context.Response.WriteAsync(JsonSerializer.Serialize(result));
-    }
-
-    private Task HandleExceptionAsync(HttpContext context, Exception ex)
-    {
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-
-        var result = new
-        {
-            message = "An unexpected error occurred.",
-            detail = ex.Message // Optional: remove or log in production
-        };
-
-        return context.Response.WriteAsync(JsonSerializer.Serialize(result));
     }
 }

@@ -1,10 +1,13 @@
-using crewbackend.Data;
-using crewbackend.Services.Interfaces;
-using crewbackend.Services;
+using CrewBackend.Data;
+using CrewBackend.Services.Interfaces;
+using CrewBackend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity; // For PasswordHasher<>
-using crewbackend.Models;
+using CrewBackend.Models;
+using CrewBackend.Services.Reports;
+using CrewBackend.Services.Reports.Formatters;
+using CrewBackend.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,10 +37,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // Register custom services
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
-// Register UserService for Dependency Injection
-// It means a fresh UserService instance is created per HTTP request (best practice for database access).
+builder.Services.AddScoped<IOrganisationService, OrganisationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IRbacPolicyEvaluator, RbacPolicyEvaluator>();
+
+// Register report services
+builder.Services.AddSingleton<ReportFormatterFactory>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Register Seeder: make sure Seeder is registered in DI container
 builder.Services.AddScoped<Seeder>();

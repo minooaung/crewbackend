@@ -1,14 +1,16 @@
-using crewbackend.DTOs;
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using AutoMapper;
-using crewbackend.Helpers;
+using CrewBackend.Helpers;
+using CrewBackend.Exceptions.Domain;
+using CrewBackend.Exceptions.Auth;
 
-namespace crewbackend.Controllers
+namespace CrewBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -25,48 +27,15 @@ namespace crewbackend.Controllers
             _mapper = mapper;
         }
 
-        // [HttpPost("signup")]
-        // public async Task<IActionResult> SignUp([FromBody] UserCreateDTO userDto)
-        // {
-        //     if (!ModelState.IsValid)
-        //     {
-        //         return BadRequest(ModelState);
-        //     }
-
-        //     var existingUser = await _userService.GetUserByEmailAsync(userDto.Email);
-        //     if (existingUser != null)
-        //     {
-        //         return Conflict(new { message = "Email already in use" });
-        //     }
-
-        //     var createdUser = await _userService.CreateUserAsync(userDto);
-        //     return CreatedAtAction(nameof(SignUp), new { id = createdUser.Id }, createdUser);
-        // }
-
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] UserCreateDTO userDto)
         {
-            // if (!ModelState.IsValid)
-            // {
-            //     var errors = ModelState
-            //         .Where(x => x.Value != null && x.Value.Errors.Count > 0)
-            //         .ToDictionary(
-            //             kvp => kvp.Key,
-            //             kvp => kvp.Value?.Errors?.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
-            //         );
-            //     return BadRequest(new { errors });
-            // }
-
-            var errorResult = ControllerHelpers.HandleModelStateErrors(ModelState);
-            if (errorResult != null)
-            {
-                return errorResult;
-            }
+            ControllerHelpers.HandleModelStateErrors(ModelState);
 
             var existingUser = await _userService.GetUserByEmailAsync(userDto.Email);
             if (existingUser != null)
             {
-                return Conflict(new { message = "Email already in use for another existing user" });
+                throw new ValidationException("email", "The email has already been taken.");
             }
 
             var createdUser = await _userService.CreateUserAsync(userDto);
@@ -87,26 +56,10 @@ namespace crewbackend.Controllers
             return Ok(new { user = createdUser });
         }
 
-        // POST: api/auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginDTO loginDto)
         {
-            // if (!ModelState.IsValid)
-            // {
-            //     var errors = ModelState
-            //         .Where(x => x.Value != null && x.Value.Errors.Count > 0)
-            //         .ToDictionary(
-            //             kvp => kvp.Key,
-            //             kvp => kvp.Value?.Errors?.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
-            //         );
-            //     return BadRequest(new { errors });
-            // }
-
-            var errorResult = ControllerHelpers.HandleModelStateErrors(ModelState);
-            if (errorResult != null)
-            {
-                return errorResult;
-            }
+            ControllerHelpers.HandleModelStateErrors(ModelState);
 
             // Log incoming headers and cookies (for debugging)
             foreach (var header in Request.Headers)
@@ -123,7 +76,7 @@ namespace crewbackend.Controllers
 
             if (user == null)
             {
-                return Unauthorized(new { message = "Invalid email or password" });
+                throw new AuthenticationException("These credentials do not match our records.");
             }
 
             // Create claims
@@ -132,7 +85,7 @@ namespace crewbackend.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Name),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.RoleName) // Assuming Role is a property of User
+                new Claim(ClaimTypes.Role, user.Role.RoleName)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -140,11 +93,7 @@ namespace crewbackend.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-            // return Ok(new { user = user });
-
-            // Return the DTO version of the user
-            var userDto = _mapper.Map<UserResponseDTO>(user);
-
+            var userDto = UserResponseMapper.MapToUserResponseDTO(user);
             return Ok(new { user = userDto });
         }
 

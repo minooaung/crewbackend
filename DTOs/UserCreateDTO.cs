@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using crewbackend.Validators;
+using CrewBackend.Validators;
 
-namespace crewbackend.DTOs
+namespace CrewBackend.DTOs
 {
     public class UserCreateDTO
     {
@@ -22,8 +22,7 @@ namespace crewbackend.DTOs
         //[Compare("Password", ErrorMessage = "Passwords do not match.")] 
         public string Password_Confirmation { get; set; } = string.Empty;
         
-        [Required]
-        public int RoleId { get; set; }
+        public string? Role { get; set; }
 
     }
 }

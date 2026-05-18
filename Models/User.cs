@@ -1,21 +1,22 @@
 using System;
 
-namespace crewbackend.Models
+namespace CrewBackend.Models
 {
     // [Index(nameof(Email), IsUnique = true)]
     public class User{
         public int Id { get; set; }
-        // public string Name { get; set; } = null!;
-        // public string Email { get; set; } = null!;
-        // public string Password { get; set; } = null!;
 
         public required string Name { get; set; }
         public required string Email { get; set; }
         public required string Password { get; set; }
-        public DateTime? EmailVerifiedAt { get; set; }
-        public string? RememberToken { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        // Soft Delete Properties
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public int? DeletedByUserId { get; set; }
+        public User? DeletedByUser { get; set; }
 
         // Relationships
         public int RoleId { get; set; } // Foreign key for UserRole

@@ -1,22 +1,20 @@
 using AutoMapper;
-using crewbackend.Data;
-using crewbackend.DTOs;
-using crewbackend.Models;
-using crewbackend.Services.Interfaces;
+using CrewBackend.Data;
+using CrewBackend.DTOs;
+using CrewBackend.Models;
+using CrewBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using crewbackend.Helpers;
-using crewbackend.Exceptions;
+using CrewBackend.Helpers;
+using CrewBackend.Exceptions.Domain;
 
-namespace crewbackend.Services
+namespace CrewBackend.Services
 {
     public class UserService : IUserService
     {
         private readonly AppDbContext _appDbContext;
         private readonly IMapper _mapper;
         private readonly IPasswordHasher<User> _passwordHasher;
-        //private readonly IPasswordValidator<User> _passwordValidator;
-
 
         public UserService(AppDbContext appDbContext, IMapper mapper, IPasswordHasher<User> passwordHasher) {
             _appDbContext = appDbContext;
@@ -30,46 +28,72 @@ namespace crewbackend.Services
 
             var users = await _appDbContext.Users.ToListAsync();
             
-            return _mapper.Map<List<UserResponseDTO>>(users);
+            return users.Select(UserResponseMapper.MapToUserResponseDTO).ToList();
         }
+        
         public async Task<UserResponseDTO?> GetUserByIdAsync(int id)
         {
             if (_appDbContext.Users == null) return null;
 
-            var user = await _appDbContext.Users.FindAsync(id);
+            var user = await _appDbContext.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return null;
 
-            return _mapper.Map<UserResponseDTO>(user);            
+            return UserResponseMapper.MapToUserResponseDTO(user);
         }
 
         public async Task<UserResponseDTO> CreateUserAsync(UserCreateDTO userDto)
         {            
-            // Check if the email already exists
+            // Check if the email exists among non-deleted users
             var existingUser = await _appDbContext.Users
-                                    .FirstOrDefaultAsync(u => u.Email == userDto.Email);
+                                    .FirstOrDefaultAsync(u => u.Email == userDto.Email && !u.IsDeleted);
 
             if (existingUser != null)
             {
-                //throw new ArgumentException("A user with this email already exists.");
-                throw new ValidationException("A user with this email already exists.", nameof(userDto.Email));
+                throw new ValidationException("email", "The email has already been taken.");
+            }
+
+            // Check if there's a soft-deleted user with this email
+            var deletedUser = await _appDbContext.Users
+                                    .Include(u => u.OrganisationUsers)
+                                    .FirstOrDefaultAsync(u => u.Email == userDto.Email && u.IsDeleted);
+
+            if (deletedUser != null)
+            {
+                // First, hard delete all associated OrganisationUsers records
+                if (deletedUser.OrganisationUsers != null && deletedUser.OrganisationUsers.Any())
+                {
+                    _appDbContext.OrganisationUsers.RemoveRange(deletedUser.OrganisationUsers);
+                }
+
+                // Then hard delete the user record to allow reuse of the email
+                _appDbContext.Users.Remove(deletedUser);
+                await _appDbContext.SaveChangesAsync();
             }
 
             if (!string.IsNullOrWhiteSpace(userDto.Password))
             {
                 if (userDto.Password != userDto.Password_Confirmation)
-                {
-                    // throw new ArgumentException("Password and Password confirmation do not match.");
-                    //throw new ValidationException("Password and confirmation do not match", "password_confirmation");
-                    
-                    throw new ValidationException("Password and Password confirmation do not match.", nameof(userDto.Password_Confirmation));
+                {                    
+                    throw new ValidationException("password_confirmation", "The password confirmation does not match.");
                 }                
             }
 
-            // Map UserCreateDTO to User entity
-            var user = _mapper.Map<User>(userDto);
+            // Get role - if no role specified, default to Employee
+            var role = string.IsNullOrEmpty(userDto.Role)
+                ? await _appDbContext.UserRoles.FirstOrDefaultAsync(r => r.RoleName.ToUpper() == "EMPLOYEE")
+                : await _appDbContext.UserRoles.FirstOrDefaultAsync(r => r.RoleName.ToUpper() == userDto.Role.ToUpper());
 
-            // Assign default RoleId (e.g., Employee = 2)
-            //user.RoleId = 2;
+            if (role == null)
+            {
+                throw new ValidationException("role", $"Unable to assign role. Please contact administrator.");
+            }
+
+            // Mapping logic stays in UserProfile.cs
+            // AutoMapper maps UserCreateDTO to User entity without Role as role is set separately
+            var user = _mapper.Map<User>(userDto);
+            user.RoleId = role.RoleId;
 
             // Hash the password using the password hasher
             user.Password = _passwordHasher.HashPassword(user, user.Password);
@@ -82,81 +106,76 @@ namespace crewbackend.Services
             _appDbContext.Users.Add(user);
             await _appDbContext.SaveChangesAsync();
 
-            //return _mapper.Map<UserResponseDTO>(user);
+            // Map the user to a UserResponseMapper to return the user with the role
             return UserResponseMapper.MapToUserResponseDTO(user);
         }
 
-// public async Task<UserResponseDTO> CreateUserAsync(UserCreateDTO dto)
-// {
-//     var user = new User
-//     {
-//         Name = dto.Name,
-//         Email = dto.Email,
-//         //Password = dto.Password, // Set the required Password property
-//         Password = _passwordHasher.HashPassword(user, dto.Password),
-//         CreatedAt = DateTime.UtcNow,
-//         UpdatedAt = DateTime.UtcNow
-//     };
-
-//     _appDbContext.Users.Add(user);
-//     await _appDbContext.SaveChangesAsync();
-
-//     return UserResponseMapper.MapToUserResponseDTO(user);
-// }
-
-        public async Task<bool> UpdateUserAsync(int id, UserUpdateDTO userDto)
+        public async Task<UserResponseDTO> UpdateUserAsync(int id, UserUpdateDTO userDto)
         {
-            var existingUser = await _appDbContext.Users.FindAsync(id);
-            if (existingUser == null) return false;
+            var existingUser = await _appDbContext.Users
+                .Include(u => u.Role)  // Include Role to ensure it's available for mapping
+                .FirstOrDefaultAsync(u => u.Id == id);
+                
+            if (existingUser == null) 
+            {
+                throw new EntityNotFoundException($"User with ID {id} not found.");
+            }
             
             // Handle password update first
             if (!string.IsNullOrWhiteSpace(userDto.Password))
             {
                 if (userDto.Password != userDto.Password_Confirmation)
                 {
-                    throw new ValidationException("Password and Password confirmation do not match.", nameof(userDto.Password_Confirmation));
+                    throw new ValidationException("password_confirmation", "The password confirmation does not match.");
                 }
-
+                
+                // Only hash and update password if it was provided
                 existingUser.Password = _passwordHasher.HashPassword(existingUser, userDto.Password);
             }
 
+            // Mapping logic stays in UserProfile.cs
+            // AutoMapper maps UserUpdateDTO to User entity
+            _mapper.Map(userDto, existingUser);
+
+            // Set timestamp after mapping
             existingUser.UpdatedAt = DateTime.UtcNow;
 
-            // Now map the rest of the properties (excluding Password)
-            _mapper.Map(userDto, existingUser);            
-
             await _appDbContext.SaveChangesAsync();
-            return true;
+
+            // Map (User -> UserResponseDTO) to a UserResponseMapper to return the user with the role
+            return UserResponseMapper.MapToUserResponseDTO(existingUser);
         }
-        public async Task<bool> DeleteUserAsync(int id)
+
+        public async Task<bool> DeleteUserAsync(int id, int deletedByUserId)
         {
-            var user = await _appDbContext.Users.FindAsync(id);
-            if (user == null) return false;
+            var user = await _appDbContext.Users
+                .Include(u => u.OrganisationUsers)
+                .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
+                
+            if (user == null) 
+            {
+                throw new EntityNotFoundException($"User with ID {id} not found.");
+            }
 
-            _appDbContext.Users.Remove(user);
+            // Perform soft delete on user
+            user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
+            user.DeletedByUserId = deletedByUserId;
+
+            // Soft delete all OrganisationUser records
+            if (user.OrganisationUsers != null)
+            {
+                foreach (var orgUser in user.OrganisationUsers)
+                {
+                    orgUser.IsDeleted = true;
+                    orgUser.DeletedAt = DateTime.UtcNow;
+                    orgUser.DeletedByUserId = deletedByUserId;
+                }
+            }
+
             await _appDbContext.SaveChangesAsync();
             return true;
         }
-
-        // public async Task<UserResponseDTO?> AuthenticateAsync(string email, string password)
-        // {
-        //     if (_appDbContext.Users == null) return null;
-
-        //     var user = await _appDbContext.Users
-        //         .Include(u => u.Role) // 👈 Load the role
-        //         .FirstOrDefaultAsync(u => u.Email == email);
-
-        //     if (user == null) return null;
-
-        //     // Verify the password using the password hasher
-        //     var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
-        //     if (result != PasswordVerificationResult.Success)
-        //     {
-        //         return null; // Invalid password
-        //     }
-
-        //     return _mapper.Map<UserResponseDTO>(user);
-        // }
         
         public async Task<User?> AuthenticateAsync(string email, string password)
         {
@@ -164,7 +183,7 @@ namespace crewbackend.Services
 
             var user = await _appDbContext.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
             if (user == null) return null;
 
@@ -180,22 +199,18 @@ namespace crewbackend.Services
         // Get user by email only
         public async Task<UserResponseDTO?> GetUserByEmailAsync(string email)
         {
-            //if (_appDbContext.Users == null) return null;
-
             var user = await _appDbContext.Users
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
-            return user == null ? null : _mapper.Map<UserResponseDTO>(user);
-        }
-
-        // public IQueryable<User> QueryUsers() // Implemented QueryUsers method
-        // {
-        //     return _context.Set<User>();
-        // }
+            return user == null ? null : UserResponseMapper.MapToUserResponseDTO(user);
+        }        
 
         public IQueryable<User> QueryUsers()
         {
-            return _appDbContext.Users.AsQueryable();
+            return _appDbContext.Users
+                .Include(u => u.Role)
+                .Where(u => !u.IsDeleted)
+                .AsQueryable();
         }
     }
 }

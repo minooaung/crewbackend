@@ -1,4 +1,4 @@
-namespace crewbackend.Helpers
+namespace CrewBackend.Helpers
 {
     public class PaginationLink
     {
